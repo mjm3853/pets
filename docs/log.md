@@ -204,3 +204,32 @@ could silently quarantine real moments. Matt is supplying the actual date.
 
 Next is #9, individual pet ID, which is the heaviest remaining item and the one
 that would have caught the two stray dogs automatically.
+
+## 2026-09-13 — The anchor is a fact now, and it made a prologue
+
+Matt gave the real adoption day: **9 Apr 2021**. The archive derives 7 Apr, so
+the given date is two days *later* than the first photo.
+
+That gap turned out to be the interesting part. Every prior assumption had the
+anchor as the earliest thing in the archive, because a derived anchor is the
+first photo by construction. A real anchor need not be: you photograph an
+animal at the shelter before you bring them home. Those moments sit before
+every chapter, and with the anchor moved they were about to fall out of the
+timeline silently — not quarantined, not flagged, just absent from every
+chunk.
+
+They now get a **prologue chapter**. Here it is one five-frame moment from
+7 Apr, with a person in frame: the day they met her, two days before she came
+home. That is arguably the most loaded item in the whole archive and it
+existed only as an accident of where a loop started.
+
+Generalises well beyond this household. For a rescue or rehoming the
+pre-adoption material — foster photos, shelter photos, the previous owner's
+pictures — is often the entire origin story, and it all lands in exactly this
+window. Worth remembering that the category is *invisible* until the anchor is
+a fact rather than a guess.
+
+Anchor persists to `pet.json`, so it is asked once and no import can move it
+(D14, I1). Quarantine still keys off the derived anchor deliberately: outlier
+detection and chapter-start are different jobs, and conflating them would let
+a given date silently quarantine real moments.

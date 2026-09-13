@@ -82,6 +82,14 @@ Life years anchored on the **first photo** produced six clean chapters, each
 ending days before the next anniversary. No tuning, no thresholds, and it
 matches how people already talk ("her first year").
 
+**The anchor is a fact the user owns, not a derivation.** Izzy's adoption day
+is 9 Apr 2021; the archive derives 7 Apr. A real anchor can be *later* than the
+first photo, because people photograph an animal before bringing it home — and
+those moments then sit before every chapter. They get a **prologue**, a
+category that cannot exist while the anchor is derived, since a derived anchor
+is the first photo by construction. For a rescue or rehoming that window holds
+the whole origin story.
+
 Anchor on first-seen, not January 1 — but hold the anchor loosely. A second
 import of this same archive added 708 earlier photos and moved it 103 days,
 taking all five anniversaries with it. See [D14](decisions.md) and
