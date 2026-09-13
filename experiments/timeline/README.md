@@ -7,6 +7,21 @@ real archive: 1,274 files of one dog across five years and three phones.
 that into a self-contained page. Findings live in
 [`docs/data-model.md`](../../docs/data-model.md).
 
+## Getting photos off an Android phone
+
+Fastest path is USB with `adb` (`brew install android-platform-tools`), with
+USB debugging enabled on the phone (Settings → About phone → tap Build number
+7× → Developer options → USB debugging):
+
+```bash
+adb pull /sdcard/DCIM/Camera sample_photos/<name>
+```
+
+This copies only photos still on the device. Anything Google Photos has
+removed via "Free up space" is not there, and measuring that gap is itself an
+open question (D7). To include those, use Google Takeout, which ships each
+photo with a `.json` sidecar containing `photoTakenTime`.
+
 ## Run
 
 ```bash
