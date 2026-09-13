@@ -19,12 +19,14 @@ engineer would reintroduce the bug by accident.
 
 ## Orientation
 
-Everything lives in `experiments/timeline/`. Three files matter:
+Everything lives in `experiments/timeline/`. Five files matter:
 
 | file | what it is | entry points |
 |---|---|---|
-| `ingest.py` | photos → `moments.json` | `scan()` per roll · `detect()` · `build_moments()` · `find_anchor()` · `build_eras()` · `build_milestones()` · `build_merge_report()` · `main()` |
-| `render.py` | `moments.json` → HTML | `crop()` / `wide()` encode · `Images` caches and delivers · `cell()` one sheet cell · `main()` holds the CSS, the page template and the JS |
+| `ingest.py` | photos → `moments.json` | `scan()` per roll or `--about` album · `detect()` · `build_moments()` · **`assign_appearances()`** (which pet, and why) · `load_profile()` · `find_anchor()` · `build_eras()` · `build_milestones()` · `find_islands()` · `build_digest()` |
+| `render.py` | `moments.json` → pages | `crop()`/`wide()` encode · `Images` caches and delivers · `cell()` one sheet cell · `burst_script()` the shared expand+picker JS · `nav()` · **`render_all()`** builds every pet page plus the index · `CSS` is a module constant |
+| `index_page.py` | the front door | pet cards, Together, the review queue grouped into islands |
+| `feed.py` | the daily surface (D18) | `score()` is the product; everything else is delivery |
 | `cache.py` | content-hash cache | `Digests.of(path)` · `Cache.get/put(_json)` · `param_key()` |
 
 `moments.json` is the whole data layer. Top level: `pets`, `source`,
@@ -33,15 +35,18 @@ most:
 
 ```
 media    file id path contributor ingested_at taken_at time_source kind
-         device gps width height pet people box score [assign] [also_in]
+         device gps width height pet species people box score
+         [assign] [also_in]
 moment   id started_at ended_at date span_seconds media_count pet_count
          has_pet dated hero_quality with_people kinds device gps
          hero hero_path hero_box hero_by contributors co_attended files
          appearances[{pet, assigned_by}] unassigned before_anchor
+         [needs_review review_why]
 pet      id name [species] [anchor] sparse eras milestones moments media
-         with_people first_seen last_seen contributors
+         with_people first_seen last_seen contributors islands
          [anchor_source anchor_derived before_anchor_moments]
 era      id index label eyebrow start end moments media with_people hero
+         hero_chosen hero_options
 milestone kind date label moment value runner_up margin provisional
 ```
 
@@ -51,17 +56,19 @@ has neither. `render.py --pet <id>` selects one.
 
 `pet.json` (gitignored, next to the scripts) is what the user owns and
 nothing derived may overwrite: `pets[]`, `people[]`, `access[]` (person↔pet
-with a role and optional from/to), and `assignments` (moment id → pet ids,
-written by the page's correction tray).
+with a role and optional from/to), `assignments` (moment id → pet ids) and
+`heroes` (pet id → chosen cover moment ids) — the last two written by the
+page's correction tray.
 
 ## The fast loop
 
 Nothing here should take more than a few seconds to iterate on:
 
 ```bash
-uv run ingest.py --pet Izzy --rebuild moments.json      # ~2s, no model
-uv run render.py --out izzy.html                        # ~1s warm
-python3 -m http.server 8000                             # then open the page
+uv run ingest.py --pet Izzy --rebuild moments.json   # ~2s, no model
+uv run render.py --all --out out.html                # every pet + index
+uv run feed.py                                       # today's feed
+python3 -m http.server 8777                          # then open the page
 ```
 
 `--rebuild` recomputes everything downstream of detection. Detection and
@@ -122,9 +129,9 @@ tests "will they open a feed" as well as an app would.
 
 **Measure before and after.** Every change that touches ingest should be
 checked against the numbers in `experiments/timeline/README.md`. With all
-three pets: 4,547 files, 4,070 with an animal, 1,550 moments, Izzy 1,353 /
-Oakley 60 / Ray 49, 24 multi-pet, 0 unassigned. Izzy alone must stay at
-1,378 moments and 7 chapters. If a number moves and the issue did not
+four pets: 4,547 files, 4,070 with an animal, 1,550 moments, Izzy 1,388 /
+Oakley 58 / Ray 29 / Shadow 19, 58 multi-pet, 2 deliberately unassigned,
+0 needing review. Izzy alone must stay at 1,388 moments and 7 chapters. If a number moves and the issue did not
 intend it to, stop — and the digest (`digest.json`) will tell you what
 moved.
 

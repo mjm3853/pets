@@ -1,8 +1,9 @@
 # Core data model
 
-Derived from a real archive, not from first principles: 1,982 files covering
-one dog across five and a half years and three phones (`experiments/timeline/`).
-Every claim below is something the dump actually demonstrated.
+Derived from a real archive, not from first principles: **4,547 files across
+four pets and fourteen years**, from two people's exported albums
+(`experiments/timeline/`). Every claim below is something the data actually
+demonstrated; the numbers are current unless a line says otherwise.
 
 The vision doc names four objects — `pet` / `moment` / `contributor` /
 `milestone`. Running real data through them changed two of the four.
@@ -41,7 +42,7 @@ One row per file. Cheap, immutable, never shown directly.
 | `kind` | photo / motion / portrait / night / video. Pixel encodes this in the filename |
 | `device` | EXIF make+model |
 | `gps` | present on 97% of this archive |
-| `pet`, `score`, `box` | detector output, normalized box |
+| `pet`, `species`, `score`, `box` | detector output, normalized box |
 | `species` | detector's guess, kept as evidence and **not trusted** — see below |
 | `people` | count of `person` detections — the togetherness signal |
 
@@ -122,7 +123,7 @@ Two real rolls, merged: Matt 1,782 photos of Izzy, Renee 2,142, with only
 **20 files in common** (the same photo texted between them at some point,
 kept once). Each holds close to 290 days the other has nothing for. Merged
 day coverage is 772 against 484 and 490 for each alone — **the merge adds
-58% more days than the better single roll**, and 81 moments are built from
+58% more days than the better single roll**, and 103 moments are built from
 both cameras at the same event.
 
 That is the D6 wedge, quantified, from two ordinary phone exports with no
@@ -175,11 +176,11 @@ a file arrived in.
 
 ---
 
-## Proposed: people, pets and the graph between them
+## People, pets and the graph between them
 
-*Proposed 2026-09-13 from a conversation, not from measured data. Everything
-above this line was derived from the archive; this section is design, and is
-marked so nobody mistakes it for a finding. Tracked as issue #22.*
+*Proposed from a conversation, then **built** — issue #22 is closed and all
+of this ships. `assigned_by` values in practice are `user`, `album`,
+`caretaker`, `inferred`; `platform` was never used.*
 
 ### Why now
 
@@ -216,7 +217,7 @@ about either household changes that.
 
 `moment.pet` becomes `moment.appearances[]`. Today a moment has a pet by
 assumption. Tomorrow it has zero or more, each with `assigned_by`: `user`,
-`platform`, or `inferred`. That field is the bridge between "multiple pets are
+`album`, `caretaker` or `inferred`. That field is the bridge between "multiple pets are
 in scope" and "we do not build recognition" (D17). In a single-pet household
 `inferred` is right almost always and nothing changes. With a second animal,
 assignment comes from the person, or from the platform's own labels if the
@@ -272,14 +273,16 @@ assumed by the schema. `find_anchor()` failing to find a run is the signal.
 **Subject folders.** 53 of Oakley's 138 files are Matt's own photos, pulled
 out by subject. The folder is *about* a pet, not *from* a person. That is
 how most people will hand photos over — "here are pics of my dog" — and it
-is also **the assignment**: every file in it is `assigned_by: user` for that
-pet, with the contributor recovered from filename overlap with known rolls
+is a strong *hint*, not proof: every file in it is `assigned_by: album`
+(D23) for that pet, with the contributor recovered from filename overlap with known rolls
 or left `unknown`. Ingest takes `--about NAME=PATH` alongside `--roll`.
 
 **Guess fewer times than needed (D21).** The single-pet inference that gets
-Izzy right 99.95% of the time is wrong the moment a second dog exists: 27
-of her 1,378 moments contain Oakley, 18 entirely, 9 both dogs — 2%, forty
-times the stray rate, invisible until a human curated a folder. So
+Izzy right 99.95% of the time is wrong the moment a second dog exists: when
+Oakley's album first landed, 27 of Izzy's 1,378 moments turned out to contain
+him — 18 entirely, 9 both dogs. Two percent, forty times the stray rate, and
+invisible until a human curated a folder. *(Point-in-time, before Ray and
+Shadow; the fuller picture is D23 and the table above.)* So
 inference is used for exactly one case, a contributor's single primary pet.
 No secondary pet is ever inferred. Ambiguity resolves to **unassigned**, a
 first-class state rendered in its own strip, never hidden, never defaulted.

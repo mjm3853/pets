@@ -5,7 +5,7 @@ checked against the actual generated pages rather than assumed. Update it
 when the answers change; decisions go in [decisions.md](decisions.md).
 
 The asset being protected is **a household's photo archive**: 4,547 files,
-five and a half years, three pets, two people, and the inside of their home.
+fourteen years, four pets, two people, and the inside of their home.
 This is among the most sensitive personal data most people hold, and unlike
 a password it cannot be rotated after a leak.
 
@@ -13,12 +13,12 @@ a password it cannot be rotated after a leak.
 
 ## What is actually in the output today
 
-Measured on `izzy.html` (1,353 moments) and `oakley.html`:
+Measured on `izzy.html` (1,388 moments), `index.html` and `feed.html`:
 
 | | in the page? | note |
 |---|---|---|
 | Photo thumbnails | **yes**, 200px | the point of the page |
-| Absolute source paths | no | 0 occurrences; `--originals` (#13) would add them |
+| Absolute source paths | no | 0 occurrences; a future `--originals` (#13) would add them |
 | GPS coordinates | no | 0 occurrences, though 2,944 media rows carry them in `moments.json` |
 | Device models | **yes** | "Pixel 5", "Pixel 3 XL" — in the expanded burst |
 | Contributor names | **yes** | "Matt", "Renee" — first names only |
@@ -62,9 +62,10 @@ photos is the crown jewels, and the product has no need for them.
 
 *Today:* held. Thumbnails are re-encoded 200px crops; EXIF does not survive
 re-encoding, so the shipped images carry no embedded GPS or camera metadata.
-*Rule for #13 (downloads):* `--originals` emits `file://` links and must stay
-**off by default** and never be used for a page that will be shared. Verified
-today that the flag off leaves 0 paths in the HTML.
+*Rule for #13 (downloads):* there is **no `--originals` flag yet**. When it
+is built it emits `file://` links and must be off by default and never used
+for a page that will be shared. Today's pages contain 0 source paths because
+nothing ever writes one.
 *Rule for #26/#27:* a server stores moments and thumbnails only. If a server
 ever needs an original, that is a design error.
 

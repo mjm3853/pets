@@ -4,8 +4,9 @@ Guidance for Claude Code when working in this repo.
 
 ## What this repo is
 
-The hub for the pet memory product: an app that auto-builds a pet's life
-timeline from the camera roll instead of asking the user to curate one.
+The hub for the pet memory product: it turns an exported pet album into a
+browsable life timeline, merges several people's albums of the same animal,
+and makes the inevitable cleanup cheap (D22, D24).
 Currently pre-build — ideation and de-risking, not production code.
 
 Read [docs/product-vision.md](docs/product-vision.md) before proposing
@@ -35,7 +36,7 @@ user raising it first.
   (with status locked/proposed/superseded) rather than letting it live only
   in chat history. Don't edit the vision doc's §3 table to track decisions.
 - **Before implementing any issue, read [docs/implementing.md](docs/implementing.md).**
-  It has the orientation, the fast iteration loop, the eight rules that
+  It has the orientation, the fast iteration loop, the nine rules that
   must survive any change, and the definition of done. Every open issue has
   an *Implementation* section with files, functions, steps and a *Verify*
   list; the closing comment must carry the measurements, not just "done".

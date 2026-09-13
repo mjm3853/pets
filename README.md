@@ -1,6 +1,6 @@
 # Pets
 
-Hub repo for the pet memory product — an app that auto-builds a pet's life timeline from your camera roll instead of asking you to curate one.
+Hub repo for the pet memory product — it turns an exported pet album into a browsable life timeline, merges several people's albums of the same animal, and makes the cleanup that always follows cheap.
 
 **Status:** early ideation, pre-build. Nothing is being shipped yet; the work so far is de-risking against real data.
 
@@ -37,9 +37,11 @@ uv run render.py --out izzy.html
 open izzy.html
 ```
 
-No server, no database, no build step. Run against 4,403 files from two
-people's camera rolls, it finds an animal in 90% of them and collapses them
-into 1,378 moments across a prologue and six life-year chapters.
+No server, no database, no build step. Run against 4,547 files — two camera
+rolls plus three albums about friends' dogs — it finds an animal in 90% of
+them and collapses them into 1,550 moments across four pets. `feed.py`
+writes the daily view; `render.py --all` writes a page per pet plus an index
+with the cross-pet overlaps and the review queue.
 
 Experiments are throwaway scripts, each its own `uv` project. Photos and
 generated output are never committed.

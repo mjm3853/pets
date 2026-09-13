@@ -71,7 +71,7 @@ Needs no photo paths: they travel in `moments.json`.
 | `--thumb`, `--quality` | contact-sheet thumbnails (default 200px) |
 | `--frame`, `--frame-quality`, `--max-frames` | frames inside an expanded burst |
 
-Current output, 1,378 moments:
+Current output, 1,550 moments across four pets:
 
 | mode | page | assets | good for |
 |---|---|---|---|
@@ -86,7 +86,7 @@ what actually changed:
 | | cold | warm |
 |---|---|---|
 | `ingest.py`, 4,383 files | 6m25s | **4.8s** |
-| `render.py`, 1,378 moments | 3m11s | **0.8s** |
+| `render.py`, 1,550 moments | 3m11s | **0.8s** |
 
 Output is byte-identical either way. The cache is keyed on file contents plus
 every parameter that reaches the encoder, so changing `--thumb` re-cuts the
@@ -138,20 +138,28 @@ behaviour.
 
 ## Results on the Izzy archive
 
-Two rolls, Matt's and Renee's:
+Two camera rolls (Matt, Renee) plus three albums about friends' dogs:
 
 | | |
 |---|---|
-| Files in | 4,403 (20 shared copies kept once) |
-| Contained a detectable animal | 3,924 (90%) |
-| Moments after burst clustering | 1,378 (2.8× compression) |
-| Chapters | prologue + 6 life years, anchored on adoption day |
-| Built from both rolls at once | 81 moments |
-| Held out | 163 undated, 2 pre-anchor (another dog) |
+| Files in | 4,547 |
+| Contained a detectable animal | 4,070 (90%) |
+| Moments after burst clustering | 1,550 |
+| **Izzy** | 1,388 moments · prologue + 6 chapters, anchored on adoption day |
+| **Oakley** | 58 moments · sparse, no timeline |
+| **Ray** | 29 moments · sparse |
+| **Shadow** | 19 moments · a third friend's dog found inside Ray's album |
+| Moments holding more than one pet | 58 |
+| Held out | 172 undated, 2 pre-anchor, 2 deliberately unassigned |
+| Needing review | 0, after 62 human answers |
 
 **Day coverage: Matt 484, Renee 490, merged 772** — merging adds 58% more
-days than the better single roll. That is the cross-person wedge (D6),
-measured.
+days than the better single roll, and 103 moments hold frames from both
+people. That is the cross-person wedge (D6), measured.
+
+An album is a **hint, not ground truth** (D23): Ray's album turned out to be
+33 Shadow, 31 Ray, 18 Izzy-and-Ray and 3 Oakley. Sorting that out cost 62
+answers — about 28 per 100 album photos — through the review queue.
 
 ---
 

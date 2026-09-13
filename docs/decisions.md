@@ -96,7 +96,7 @@ the category and milestone artifacts avoid the memorial ethics problem in D2.
 
 ## D6 — The wedge is the pet as a cross-person entity, not detection
 
-**Status:** proposed · **Date:** 2026-09-13
+**Status:** locked · **Partly corrected by D17/D19/D21:** the claim below that merging *requires* individual pet ID is wrong — merging works on album input with a human correction pass instead · **Date:** 2026-09-13
 
 **Decision:** Treat auto-detection and on-this-day resurfacing as table
 stakes. The differentiator is merging multiple people's camera rolls into one
@@ -123,7 +123,7 @@ and should be stopped.
 
 ## D7 — Android first
 
-**Status:** proposed · **Date:** 2026-09-13
+**Status:** proposed · **Rationale weakened by D24:** ingest is a file the user exports, so MediaStore, ML Kit and the "free up space" gap no longer decide the platform. The client could be anything, including a web app. Undecided · **Date:** 2026-09-13
 
 **Decision:** The first client is a native Android app (Kotlin). iOS follows
 only after the core loop is validated. Experiments ingest from the household's
@@ -362,7 +362,7 @@ the right default for anything that moves the anchor.
 
 ## D17 — No pet recognition; the detector answers "an animal", not "which animal"
 
-**Status:** locked · **Date:** 2026-09-13 · **Refines:** D6
+**Status:** locked · **Numbers superseded by D23/D25:** contamination is ~32% on a friend's album, not 0.05%, and multi-pet is normal (D24). The *decision* stands — the answer is a human correction pass (D27), not a model. The temporal-heuristic claim below is corrected by D25 · **Date:** 2026-09-13 · **Refines:** D6
 
 **Decision:** Do not build individual pet identification. Detection stays at
 "is there an animal in this frame". Species is a **profile field the user
@@ -495,7 +495,7 @@ the proposal is a starting point.
 
 ## D21 — Guess fewer times than needed: unassigned beats wrong
 
-**Status:** locked · **Date:** 2026-09-13 · **Refines:** D11, D16, D17, D19 · **See:** issues #22, #30, #31
+**Status:** locked · **Corrected by D23:** `--about` writes the `album` tier, not `user`; only a person's explicit answer (#30) is `user` · **Date:** 2026-09-13 · **Refines:** D11, D16, D17, D19 · **See:** issues #22, #30, #31
 
 **Decision:** Automatic assignment of a moment to a pet happens in exactly
 one case — a contributor's single primary pet, the one they have `owner`
@@ -525,13 +525,13 @@ not for more inference.
 
 ## D22 — The input is the platform's pet album, not the raw camera roll
 
-**Status:** locked · **Date:** 2026-09-13 · **Refines:** D7, D17, D21 · **See:** issues #32, #18
+**Status:** locked · **Corrected by D23** (an album is a hint, not ground truth) and **narrowed by D24** (curating the pile is the product, not the platform's recognition) · **Date:** 2026-09-13 · **Refines:** D7, D17, D21 · **See:** issues #32, #18
 
 **Confirmed by Matt:** every folder so far — Izzy (both), Oakley, Ray — was
 a Google Photos album, exported and downloaded. The friends' own phones
 hold more photos of their dogs than reached the albums.
 
-**Decision (proposed):** What a person hands the product is the pet album
+**Decision:** What a person hands the product is the pet album
 their phone already made — Google Photos' or Apple's own pet grouping — not
 their entire camera roll. The platform does the first cut, which is the
 recognition we decided not to build (D17). We do what the platform does not:
