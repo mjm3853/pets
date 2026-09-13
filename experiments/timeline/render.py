@@ -627,7 +627,12 @@ document.querySelectorAll('.island .iacts .pick').forEach(b =>
   b.addEventListener('click', () => {{
     const isl = b.closest('.island');
     isl.dataset.ids.split(',').forEach(id => {{
-      CHOSEN[id] = b.dataset.confirm ? [...(M[id] ? M[id].pets : [])] : [b.dataset.pet];
+      // Answering an album's claim must not delete a pet the album never
+      // claimed: 49 of Oakley's moments also hold Izzy, inferred separately.
+      const keep = (M[id] && M[id].keep) || [];
+      CHOSEN[id] = b.dataset.confirm
+        ? [...(M[id] ? M[id].pets : [])]
+        : [...new Set([b.dataset.pet, ...keep])];
     }});
     save();
     isl.classList.add('done');
@@ -754,6 +759,7 @@ def render_all(args) -> None:
         "hw": m.get("hero_by", ""), "who": m.get("contributors", []),
         "pets": [a["pet"] for a in m["appearances"]], "trunc": 0,
         "why": m.get("review_why", []),
+        "keep": [a["pet"] for a in m["appearances"] if a["assigned_by"] != "album"],
     } for m in moments if m["id"] in thumbs}
     html = index_page.build(d, d["pets"], thumbs, heroes, order, detail, covers)
     (out_dir / "index.html").write_text(html, encoding="utf-8")

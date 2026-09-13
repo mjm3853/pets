@@ -247,9 +247,12 @@ def load_profile(path: Path, pet_name: str, species: str | None, anchor: str | N
     p.setdefault("access", [])
 
     by_id = {x["id"]: x for x in p["pets"]}
-    primary = p["pets"][0] if p["pets"] else None
-    if primary and pet_name != "Pet":
-        primary["name"] = pet_name
+    primary = by_id.get(slug(pet_name)) if pet_name != "Pet" else (
+        p["pets"][0] if p["pets"] else None)
+    if primary is None and pet_name != "Pet":
+        primary = {"id": slug(pet_name), "name": pet_name}
+        p["pets"].append(primary)
+        by_id[primary["id"]] = primary
     if primary and species:
         primary["species"] = species
     if primary and anchor:
@@ -334,7 +337,6 @@ def assign_appearances(moments: list[dict], media: list[dict], profile: dict) ->
                 care = caretaking(profile, slug(row["contributor"]), m["date"])
                 if len(care) == 1:
                     found.setdefault(care[0], "caretaker")
-                    continue
                 mine = owns.get(slug(row["contributor"]), [])
                 if len(mine) == 1:
                     found.setdefault(mine[0], "inferred")
@@ -343,10 +345,10 @@ def assign_appearances(moments: list[dict], media: list[dict], profile: dict) ->
         m["unassigned"] = m["has_pet"] and not m["appearances"]
         # Nothing but an album vouches for this one, and an album is 32%
         # wrong. Not an error — a question for the person who was there.
-        m["needs_review"] = bool(m["appearances"]) and all(
-            a["assigned_by"] == "album" for a in m["appearances"])
+        m["needs_review"] = any(a["assigned_by"] == "album" for a in m["appearances"])
         if m["needs_review"]:
-            why = ["only an album says so"]
+            unsure = [a["pet"] for a in m["appearances"] if a["assigned_by"] == "album"]
+            why = [f"only an album says {', '.join(unsure)} is here"]
             if all(by_file.get(f, {}).get("contributor") == "unknown"
                    for f in m["files"]):
                 why.append("nobody here took it")
@@ -442,9 +444,8 @@ def superlative(values: list[float]) -> dict:
     next import can flip back, so it is marked provisional rather than shown
     as a standing record (D15).
     """
-    top = max(values)
-    rest = [v for v in values if v != top] or [0]
-    second = max(rest)
+    rest = sorted(values, reverse=True)[1:] or [0]
+    top, second = max(values), rest[0]
     margin = (top - second) / top if top else 0
     return {"value": top, "runner_up": second, "margin": round(margin, 3),
             "provisional": margin < 0.15}

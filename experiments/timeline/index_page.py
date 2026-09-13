@@ -104,8 +104,11 @@ def build(d: dict, all_pets: list[dict], thumbs: dict, heroes: dict,
             opts = [m for m in e.get("hero_options", []) if m in covers]
             if len(opts) < 2:
                 continue
-            cur = next((m for m in opts if e["hero_chosen"]
-                        and m in covers), opts[0])
+            # e["hero"] is a filename; find the option that actually is it,
+            # otherwise the label says "your pick" over the formula's pick.
+            cur = next((mid for mid in opts
+                        if mid in moments and moments[mid]["hero"] == e["hero"]),
+                       opts[0])
             buttons = "".join(
                 f'<button type="button" data-mid="{m}" aria-pressed="{str(m == cur).lower()}">'
                 f'<img src="{covers[m]}" alt="" loading="lazy"></button>' for m in opts)

@@ -943,3 +943,54 @@ assignments now outnumber album ones 70 to 49.
 
 Two cover picks landed too — Year 5 and Year 6 now use Matt's choice over
 the formula's.
+
+## 2026-09-13 — Correctness review: six real bugs, five of them silent
+
+A read-only review of the pipeline found nine confirmed issues. Verified each
+myself against the live archive before fixing. Six were worth fixing now, and
+five of them were the project's recurring failure mode: **plausible wrong
+output, no error**.
+
+**1. The review queue was hiding 48 of its 49 items.** `needs_review` was
+`all(assigned_by == "album")`, so if *any* pet in a moment came from another
+tier, every album claim in it was exempted. 40 moments read `(izzy inferred,
+oakley album)` — Izzy being inferred says nothing whatever about Oakley, yet
+Oakley's presence, which rests on an album that is ~32% wrong, was never
+questioned. The page said "Needs review — 1". The honest number is 49. That
+single line quietly defeated the entire cleanup loop.
+
+**2. A caretaker window suppressed own-pet inference** — the exact bug fixed
+for albums in #33, still live in the branch below it. A dogsitting edge for
+Renee over 2023 silently moved **111 Izzy moments to Oakley-only**. Not
+unassigned, not flagged.
+
+**3. `superlative()` deleted ties.** It removed *every* copy of the winning
+value, so an exact tie reported third place as runner-up. Live: 2021-04-10
+and 2021-07-15 both have 11 moments, and the milestone read "margin 36%,
+provisional false" — a coin flip presented as a record, which is precisely
+what D15 exists to prevent. Now 0% and provisional.
+
+**4. `--pet` renamed whichever pet was first**, not the one named. Running
+`--pet Oakley` would have rewritten Izzy's profile to "Oakley", leaving two
+pets with the same name and 1,388 moments under the wrong one — silent
+corruption of the one file the user owns.
+
+**5. "Your pick" showed the formula's pick.** The cover label never compared
+the option against the chosen hero, so both confirmed picks displayed the
+wrong image under a label claiming otherwise.
+
+**6. The island batch button deleted co-present pets.** "All of these are
+Oakley" wrote `["oakley"]`, dropping Izzy from 47 moments she is in —
+calibration bug 3 reintroduced in JavaScript. It now preserves any pet with
+support the album did not provide.
+
+Left for later: one pet's `before_anchor` pass can clobber another's (latent
+until a second pet has an owner), the detection cache key has no recipe
+version unlike render's, and era membership compares a date string against a
+datetime boundary. Filed rather than rushed.
+
+Worth noting what this says about the pace. Every one of these was written
+today, by me, in code that was tested and reviewed at the time. Four of the
+six are *the same bug class the project has already been bitten by three
+times* — and two are literally the same bug in a different branch or
+language. Speed does not stop producing this class; only a second pass does.
