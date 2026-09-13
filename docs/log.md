@@ -657,3 +657,39 @@ including a web app. Flagged in D24, not decided.
 
 `rawroll.py` survives its own issue being closed — it is the **review tool**
 now, and it is what #33 will use to score the cleanup loop.
+
+## 2026-09-13 — The cleanup loop, scored
+
+Built #33 and #34 together, since the review queue needed somewhere to live.
+
+**#33 scored against Matt's 40 tags.** Izzy photos found 7/20 → 12/20,
+misattributions 13 → 8, and **all 8 remaining are flagged for review**. The
+second number is the one that matters: nothing is silently wrong any more,
+which is the whole D21/D24 posture.
+
+Two things worth keeping from the build.
+
+**A plausible prior with zero signal.** The spec suggested using
+co-occurrence, so I tested "was Izzy also photographed that day" before
+writing anything. 10 of 13 for the *wrong* cases and 10 of 13 for the
+*correct* ones — no discriminative power at all. It would have looked
+clever, shipped, and added noise. Measuring first cost two minutes.
+
+**The fix was removing code, not adding it.** One line —
+`if row.get("assign"): continue` — was suppressing a contributor's own-pet
+inference for album files. That single suppression was what hid Izzy inside
+Oakley's album. Demoting the album tier and deleting that line did most of
+the work.
+
+The remaining 8 are album files with no roll overlap and an unknown
+contributor. Nothing short of looking at them says Izzy is there, which is
+D17 territory and exactly what the queue is for.
+
+**#34, one navigable app.** index.html with pet cards, a **Together**
+section (47 moments — Izzy+Oakley 39, Izzy+Ray 8) and the review queue. The
+Together section is the bit Matt asked for and it is the most product-like
+thing built so far: it shows a friend the overlap they have never seen,
+which is the cross-person wedge made visible rather than argued.
+
+Extracted the burst panel and picker into one shared function so a moment
+opens and reassigns identically from any page.
