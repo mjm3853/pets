@@ -534,3 +534,52 @@ no originals. `moments.json` carries GPS on 2,944 rows and absolute paths on
 all 4,547 — so the rule is that the page is the only thing that ever leaves.
 Thumbnails being re-encoded crops strips EXIF as a side effect. `leakcheck.sh`
 is the pre-send gate and passes on all three pages.
+
+## 2026-09-13 — #29 prepared, awaiting reactions
+
+Three pages are built, leak-checked and ready to send. Deliberately **not**
+hosted — hand-delivered files, per security.md rule 5.
+
+| file | size | |
+|---|---|---|
+| `oakley-portable.html` | 1.5 MB | 60 moments, 2019–2026, 22 shared with Izzy |
+| `ray-portable.html` | 0.8 MB | 49 moments, 2012–2026, 2 shared with Izzy |
+| `izzy-portable.html` | 22.4 MB | 1,353 moments, 7 chapters |
+
+`leakcheck.sh` passes on all three: no absolute paths, no coordinates, no
+originals.
+
+### What to capture when each friend reacts
+
+Write it here, verbatim where possible, one section per person. The wording
+matters more than the summary — "huh, I forgot about that day" and "this is
+nice" are different signals.
+
+- **First reaction, unprompted.** Before any explanation. Do not describe the
+  product first; send the file and wait.
+- **What they opened first**, and whether they found the burst expansion on
+  their own.
+- **Anything wrong**: a dog that is not theirs, a date that is off, a photo
+  they would not want in there.
+- **Anything missing** they expected to see.
+- **Did they ask for a copy of a photo** (#13) or to send it to someone (#15)?
+- **Did they offer more photos without being asked?** That is the strongest
+  positive signal available, and the one that would move D20.
+
+### What is deliberately not being asked
+
+No questions about features, pricing, or whether they would use an app.
+Those answers are worthless this early. The only thing being measured is
+whether the artifact produces a reaction.
+
+### Known things they may notice
+
+- Ray's page starts in **2012** — his owner's old Samsung. Fourteen years.
+- Oakley's and Ray's pages have **no chapters and no anniversaries**, on
+  purpose (D21). If a friend asks for them, that is a signal worth logging:
+  it would mean the sparse view reads as incomplete rather than honest.
+- Both pages say plainly that a person chose these photos. If that reads as
+  a cop-out rather than as honesty, log that too.
+- Matt's and Renee's photos are in their dogs' pages — 51 of Ray's files and
+  125 of Oakley's came off Pixels in this household. The friends have not
+  seen most of those.
