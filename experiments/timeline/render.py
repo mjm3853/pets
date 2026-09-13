@@ -181,6 +181,28 @@ h2 { font-size:clamp(26px,3.4vw,38px); }
   color:var(--faint); margin-top:5px; }
 .frames .hero figcaption { color:var(--accent); }
 
+/* reassign */
+.who-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  margin-top:14px; padding-top:13px; border-top:1px solid var(--rule); }
+.who-row .lab { font-family:"IBM Plex Mono",monospace; font-size:11px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--faint); margin-right:2px; }
+.pick { font:inherit; font-size:13px; border:1px solid var(--rule); background:var(--paper);
+  color:var(--soft); border-radius:999px; padding:5px 13px; cursor:pointer; }
+.pick:hover { color:var(--ink); border-color:var(--soft); }
+.pick[aria-pressed="true"] { background:var(--accent); border-color:var(--accent);
+  color:var(--paper); }
+.pick kbd { font-family:"IBM Plex Mono",monospace; font-size:10px; opacity:.6;
+  margin-left:6px; }
+.tray { position:fixed; right:16px; bottom:16px; max-width:330px; background:var(--raise);
+  border:1px solid var(--accent); border-radius:6px; padding:15px 17px; box-shadow:var(--shadow);
+  font-size:13px; z-index:40; }
+.tray[hidden] { display:none; }
+.tray h4 { margin:0 0 7px; font-family:Fraunces,Georgia,serif; font-size:16px; }
+.tray textarea { width:100%; height:90px; margin-top:9px; font-family:"IBM Plex Mono",monospace;
+  font-size:10.5px; border:1px solid var(--rule); border-radius:4px; padding:7px;
+  background:var(--paper); color:var(--ink); resize:vertical; }
+.tray .acts { display:flex; gap:8px; margin-top:9px; }
+
 /* contributors */
 .rolls { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
   gap:0; margin-top:34px; border-top:1px solid var(--rule);
@@ -486,6 +508,7 @@ def main():
         "n": m["media_count"], "sp": m["span_seconds"], "p": m["with_people"],
         "dev": m["device"] or "", "ht": offset(m), "f": bursts.get(m["id"], []),
         "hw": m.get("hero_by", ""), "who": m.get("contributors", []),
+        "pets": [a["pet"] for a in m.get("appearances", [])],
         "trunc": max(0, m["media_count"] - args.max_frames),
     } for m in moments}
 
@@ -737,8 +760,22 @@ def main():
   Cell size is burst length &mdash; how many frames were taken before moving on.
 </div></footer>
 
+<div class="tray" id="tray" hidden>
+  <h4>Corrections</h4>
+  <div><span class="n"></span> &mdash; paste into <code>pet.json</code>, then re-run
+  <code>ingest.py --rebuild moments.json</code>.</div>
+  <textarea readonly></textarea>
+  <div class="acts">
+    <button class="pick" type="button" id="tray-copy">Copy</button>
+    <button class="pick" type="button" id="tray-clear">Clear</button>
+  </div>
+</div>
+
 <script>
 const M = {json.dumps(detail, separators=(',', ':'))};
+const PETS = {json.dumps([{"id": p["id"], "name": p["name"]} for p in pets], separators=(',', ':'))};
+let CHOSEN = {{}};
+try {{ CHOSEN = JSON.parse(localStorage.getItem('assign') || '{{}}'); }} catch (e) {{}}
 const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 
 function dur(s) {{
@@ -787,6 +824,16 @@ function openBurst(fig) {{
     + (bits.length > 1 ? ' &middot; ' + bits.slice(1).join(' &middot; ') : '') + '</p></div>'
     + '<button class="detclose" type="button">Close</button></div>'
     + '<div class="frames">' + strip + '</div>';
+  const chosen = CHOSEN[fig.dataset.m] || d.pets || [];
+  const picks = PETS.map((p, i) =>
+    '<button class="pick" type="button" data-pet="' + p.id + '" aria-pressed="'
+    + chosen.includes(p.id) + '">' + p.name + '<kbd>' + (i + 1) + '</kbd></button>').join('');
+  el.querySelector('.frames').insertAdjacentHTML('afterend',
+    '<div class="who-row"><span class="lab">This is</span>' + picks
+    + '<button class="pick" type="button" data-pet="" aria-pressed="'
+    + (chosen.length === 0) + '">Not sure<kbd>0</kbd></button></div>');
+  el.querySelectorAll('.who-row .pick').forEach(b =>
+    b.addEventListener('click', () => choose(fig, b.dataset.pet)));
   el.querySelector('.detclose').addEventListener('click', closeBurst);
   fig.after(el);
   el.scrollIntoView({{ block: 'nearest', behavior: 'smooth' }});
@@ -815,7 +862,52 @@ document.querySelectorAll('.hc[data-date]').forEach(btn => {{
   }});
 }});
 
-document.addEventListener('keydown', e => {{ if (e.key === 'Escape') closeBurst(); }});
+function choose(fig, pet) {{
+  const id = fig.dataset.m;
+  const cur = new Set(CHOSEN[id] || M[id].pets || []);
+  if (!pet) cur.clear();
+  else if (cur.has(pet)) cur.delete(pet);
+  else cur.add(pet);
+  CHOSEN[id] = [...cur];
+  try {{ localStorage.setItem('assign', JSON.stringify(CHOSEN)); }} catch (e) {{}}
+  const open = document.querySelector('.det');
+  if (open) open.querySelectorAll('.who-row .pick').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.pet
+      ? cur.has(b.dataset.pet) : cur.size === 0));
+  tray();
+}}
+
+function tray() {{
+  const box = document.getElementById('tray');
+  const n = Object.keys(CHOSEN).length;
+  box.hidden = !n;
+  if (!n) return;
+  box.querySelector('.n').textContent = n + (n === 1 ? ' change' : ' changes');
+  box.querySelector('textarea').value = JSON.stringify({{assignments: CHOSEN}}, null, 1);
+}}
+
+document.addEventListener('keydown', e => {{
+  if (e.key === 'Escape') return closeBurst();
+  const fig = document.querySelector('.sheet figure.open');
+  if (!fig || !/^[0-9]$/.test(e.key)) return;
+  const i = Number(e.key);
+  if (i === 0) return choose(fig, '');
+  if (PETS[i - 1]) choose(fig, PETS[i - 1].id);
+}});
+
+document.getElementById('tray-copy').addEventListener('click', async () => {{
+  const ta = document.querySelector('#tray textarea');
+  ta.select();
+  try {{ await navigator.clipboard.writeText(ta.value); }} catch (e) {{ document.execCommand('copy'); }}
+  document.getElementById('tray-copy').textContent = 'Copied';
+}});
+document.getElementById('tray-clear').addEventListener('click', () => {{
+  CHOSEN = {{}};
+  try {{ localStorage.removeItem('assign'); }} catch (e) {{}}
+  closeBurst();
+  tray();
+}});
+tray();
 </script>
 """
     args.out.write_text(html, encoding="utf-8")
