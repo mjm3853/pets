@@ -4,4 +4,4 @@ __pycache__/
 *.pt
 sample_photos/*
 !sample_photos/.gitkeep
-results.json
+results*.json

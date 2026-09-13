@@ -2,7 +2,7 @@
 
 Hub repo for the pet memory product — an app that auto-builds a pet's life timeline from your camera roll instead of asking you to curate one.
 
-**Status:** early ideation, pre-build. See [docs/product-vision.md](docs/product-vision.md) for the full working vision (premise, architecture principles, growth loops, risks, open questions).
+**Status:** early ideation, pre-build. See [docs/product-vision.md](docs/product-vision.md) for the full working vision (premise, architecture principles, growth loops, risks, open questions) and [docs/decisions.md](docs/decisions.md) for the decision log with reasoning.
 
 ## Repo layout
 
@@ -11,4 +11,4 @@ Hub repo for the pet memory product — an app that auto-builds a pet's life tim
 
 ## Current focus
 
-Per the vision doc's next step (§9): validate that an auto-built timeline from raw camera roll photos actually feels like something, before building any app around it. That's a detection pass over a sample of photos, rendered as a plain static page, no app required.
+Validate the wedge (decisions D6/D7) before building any app: pull photos off each household member's Android phone, detect the pet, and render one merged, dated timeline as a plain static page. The question is whether the merged multi-person view feels meaningfully better than one person's roll alone. Start in [experiments/detection_pass/](experiments/detection_pass/).

@@ -29,6 +29,11 @@ user raising it first.
 - Camera-roll photos and model weights are never committed — each
   experiment's `.gitignore` should exclude sample media and downloaded
   weights. Treat any real pet photos as the user's private data.
-- Keep the vision doc as the single source of truth for product decisions.
-  If a conversation changes a "locked" decision, update the doc's §3 table
-  rather than letting the decision live only in chat history.
+- [docs/decisions.md](docs/decisions.md) is the source of truth for
+  decisions and their reasoning; the vision doc describes the product. When
+  a conversation makes or changes a decision, add or update an entry there
+  (with status locked/proposed/superseded) rather than letting it live only
+  in chat history. Don't edit the vision doc's §3 table to track decisions.
+- The founding household is on Android phones plus a Mac; there are no
+  iPhones to test with. Don't propose iOS-only tooling (Vision framework,
+  osxphotos, Photos.app export) as the primary path.
