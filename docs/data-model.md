@@ -172,3 +172,86 @@ a file arrived in.
   modelling explicitly if it earns its keep.
 - **Ownership and custody.** The unresolved question flagged in D6: what
   happens to a contributor's moments when they leave.
+
+---
+
+## Proposed: people, pets and the graph between them
+
+*Proposed 2026-09-13 from a conversation, not from measured data. Everything
+above this line was derived from the archive; this section is design, and is
+marked so nobody mistakes it for a finding. Tracked as issue #22.*
+
+### Why now
+
+Two things surfaced that the current model cannot hold. A friend's
+merle-patterned dog appears throughout the archive — visits, and dogsitting —
+and there is nowhere to put it: the model has one pet, and every animal
+detection is silently assumed to be her. And Matt and Renee are two people who
+share one pet, while their friend is a person who shares a *different* pet
+with them intermittently. The vision's §4 asked for "people with access to
+this pet"; this is what that looks like once there are several of each.
+
+### The model
+
+```
+person       an identity. contributes media. has a name and an account.
+pet          the organising entity. name, species (user-set, D17), anchor, profile.
+household    people and pets who live together. a default grouping, NOT a
+             permission boundary.
+access       person <-> pet, with a role and optional date range.
+             THIS is the permission model (D5).
+appearance   pet <-> moment. which pets are in a moment; a moment can hold
+             several. carries assigned_by.
+media, moment, era, milestone   as today, unchanged.
+```
+
+Roles on `access`: **owner** (full, including anchor and profile);
+**caretaker** (contributes while they have the pet — a dogsitter, a foster;
+usually date-boxed); **friend** (contributes photos they happen to take);
+**viewer** (sees, does not add). Roles are per pet, not per household. The
+friend is a `friend` of Izzy and an `owner` of the merle dog, and nothing
+about either household changes that.
+
+### The one structural change
+
+`moment.pet` becomes `moment.appearances[]`. Today a moment has a pet by
+assumption. Tomorrow it has zero or more, each with `assigned_by`: `user`,
+`platform`, or `inferred`. That field is the bridge between "multiple pets are
+in scope" and "we do not build recognition" (D17). In a single-pet household
+`inferred` is right almost always and nothing changes. With a second animal,
+assignment comes from the person, or from the platform's own labels if the
+export carries them — never from a model we own.
+
+### What the graph makes possible
+
+**Cross-household contribution.** The friend dogsits Izzy for a week and
+takes forty photos. With a `caretaker` edge for that week, those photos flow
+into Izzy's timeline. That is the D6 merge generalised past the household —
+your friend's photos of your dog, from when you weren't there — and it is the
+thing shared albums structurally cannot do. In reverse it is exactly what has
+already happened: Matt and Renee hold photos of their friend's dog that the
+friend has never seen.
+
+**A pet with several homes.** Foster-then-adopted, shared custody, a dog that
+summers with grandparents. Date-ranged `access` edges cover every one without
+a special case.
+
+**Multiple pets, multiple species, one household.** Each pet is its own
+timeline, anchor and chapters. The household is a lens over them, not a
+container — which is what keeps D5's warning against "family plan" intact.
+
+### What it costs
+
+Assignment. Without recognition, every moment in a multi-pet household needs
+someone or something to say which pet. The realistic answers, in order: the
+platform's labels via export; the contributor's roll as a prior (Renee's roll
+is overwhelmingly Izzy); a time-boxed `caretaker` edge as a prior (photos
+during the dogsitting week are probably the visiting dog); and **batched
+correction, never per-photo prompting.** This cost is real, and it is the
+reason to keep the single-pet path exactly as fast as it is today.
+
+### What it deliberately does not include
+
+People *in* moments as identities. The detector counts persons; it does not
+say who. "With her people" stays a count. Face recognition is a different
+product with a different privacy posture, and a decision for another day.

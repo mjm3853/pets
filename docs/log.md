@@ -293,3 +293,40 @@ shipped wrong.
 **Where it is still a demo:** it lives on one laptop, as a static page. The
 gap between that and "someone else uses it" is the entire product, and #21
 exists to stop that gap from being crossed by drift.
+
+## 2026-09-13 — It landed
+
+Matt and Renee looked at the merged timeline together over breakfast. "Lots
+of great memories." That closes the vision's step 3 — the chills test — and
+closes it with the second contributor, which is the version that mattered.
+Issue #14.
+
+What they wanted next reshaped two things.
+
+**The front door is a feed.** Matt asked for something that surfaces the
+fewest, most meaningful photos at a given time, bite-sized, for limited
+attention. That is the consumption thesis stated as a product surface, and
+it is the opposite of the contact sheet. Recorded as D18; issue #16 became
+the feed. The ranking signals are all already in the data.
+
+**There are more pets and more people than the model holds.** The merle dog
+is a friend's — visits, dogsitting. Matt: people can have multiple pets;
+model people, households, multiple pets, friends, family. Wrote the proposed
+graph into data-model.md (person, pet, household, access, appearance) with
+the one structural change — `moment.pet` → `moment.appearances[]` with
+`assigned_by` — that lets multi-pet be in scope while recognition stays out.
+Recorded as D19; issue #22.
+
+The dogsitting case is the one to remember. A friend has your dog for a week
+and takes forty photos; with a date-boxed caretaker edge they flow into her
+timeline. That is the D6 merge generalised past the household, and it is the
+thing shared albums cannot do. It has also already happened in reverse: Matt
+and Renee hold photos of their friend's dog the friend has never seen.
+
+**Postable means a movie, not a card.** Pause on a moment, dig in, package
+it as an AI-assisted animation. Bursts are already stop-motion clips.
+Neither of them is a social-media person, so the artifact should work in a
+text thread as well as a feed — which broadens who the product is for.
+Issue #15 rewritten.
+
+Nothing built today after the review, deliberately.

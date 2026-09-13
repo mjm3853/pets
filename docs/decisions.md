@@ -395,3 +395,56 @@ are not treated as truth anywhere.
 **What would change it:** A household with two pets that genuinely need
 separating, or contamination rising far enough that temporal heuristics stop
 coping. Neither is true today.
+
+---
+
+## D18 — The primary surface is a feed, not the timeline
+
+**Status:** locked · **Date:** 2026-09-13 · **See:** issue #16
+
+**Decision:** The thing a person opens daily is a **feed**: the fewest, most
+meaningful moments for right now, or bite-sized scrolling by timeframe. The
+full timeline stays as the archive view — everything, in order — but it is
+not the front door.
+
+**Why:** The vision's own thesis (§2) is that this is a consumption product
+and retention lives on resurfacing. Matt, after the timeline landed: it
+needs "a Feed feature which surfaces the fewest most meaningful pictures at a
+given time … in a more bite sized and limited attention way." The contact
+sheet is the opposite of that — it is everything at once, and it rewards
+sitting down with it over breakfast, not opening it on a Tuesday. The ranking
+signals already exist and cost the user nothing: burst length, co-attendance,
+a person in frame, on-this-day, milestone proximity, and recently-ingested-
+but-old.
+
+**How to apply:** "Fewest" is the discipline. One to three moments per open.
+Anything that turns the feed into an infinite scroll has recreated the thing
+D4 cut.
+
+**What would change it:** Two weeks of the feed not being opened (#16).
+
+---
+
+## D19 — Multiple pets, multiple people, cross-household contribution are in scope
+
+**Status:** locked · **Date:** 2026-09-13 · **Refines:** D3, D5, D6, D17 · **See:** issue #22
+
+**Decision:** The model supports several pets per household, several
+households per pet, and people whose relationship to a pet is owner,
+caretaker, friend or viewer. Assignment of *which pet is in this moment* is
+done by the person or by the platform's labels — never by a model of ours.
+
+**Why:** A friend's dog appears throughout the archive, through visits and
+dogsitting, and the current model silently assumes every animal is Izzy.
+Matt: "I'd assume people can have multiple pets." The generalisation is also
+the strongest version of the wedge — a friend's photos of your dog from the
+week they had her flow into her timeline, which no shared album can do.
+
+**How to apply:** `moment.pet` becomes `moment.appearances[]` with
+`assigned_by`. The single-pet path must stay exactly as fast and as
+automatic as today; the cost of assignment is paid only where a second
+animal actually exists. The household is a grouping, not a permission
+boundary — `access` edges are.
+
+**What would change it:** Nothing planned. This is the shape D5 was
+protecting room for.
