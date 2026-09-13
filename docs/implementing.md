@@ -27,25 +27,32 @@ Everything lives in `experiments/timeline/`. Three files matter:
 | `render.py` | `moments.json` → HTML | `crop()` / `wide()` encode · `Images` caches and delivers · `cell()` one sheet cell · `main()` holds the CSS, the page template and the JS |
 | `cache.py` | content-hash cache | `Digests.of(path)` · `Cache.get/put(_json)` · `param_key()` |
 
-`moments.json` is the whole data layer. Its top level is `pet`, `source`,
-`merge`, `stats`, `eras`, `milestones`, `moments`, `media`. The shapes you
-will touch most:
+`moments.json` is the whole data layer. Top level: `pets`, `source`,
+`merge`, `stats`, `digest`, `moments`, `media`. The shapes you will touch
+most:
 
 ```
 media    file id path contributor ingested_at taken_at time_source kind
-         device gps width height pet people box score
+         device gps width height pet people box score [assign] [also_in]
 moment   id started_at ended_at date span_seconds media_count pet_count
          has_pet dated hero_quality with_people kinds device gps
          hero hero_path hero_box hero_by contributors co_attended files
-         before_anchor
+         appearances[{pet, assigned_by}] unassigned before_anchor
+pet      id name [species] [anchor] sparse eras milestones moments media
+         with_people first_seen last_seen contributors
+         [anchor_source anchor_derived before_anchor_moments]
 era      id index label eyebrow start end moments media with_people hero
 milestone kind date label moment value runner_up margin provisional
 ```
 
 A moment is **the** unit. Media are storage. Never show media directly.
+Eras and milestones live **per pet**, not at the top level; a `sparse` pet
+has neither. `render.py --pet <id>` selects one.
 
-`pet.json` (gitignored, next to the scripts) holds what the user owns:
-`anchor`, `species`. Read it, extend it, never derive over it.
+`pet.json` (gitignored, next to the scripts) is what the user owns and
+nothing derived may overwrite: `pets[]`, `people[]`, `access[]` (person↔pet
+with a role and optional from/to), and `assignments` (moment id → pet ids,
+written by the page's correction tray).
 
 ## The fast loop
 
@@ -108,9 +115,12 @@ full version is worth it. A script that regenerates a static page daily
 tests "will they open a feed" as well as an app would.
 
 **Measure before and after.** Every change that touches ingest should be
-checked against the numbers in `experiments/timeline/README.md` — 4,403
-files, 3,924 with an animal, 1,378 moments, 81 co-attended, day coverage
-772. If a number moves and the issue did not intend it to, stop.
+checked against the numbers in `experiments/timeline/README.md`. With all
+three pets: 4,547 files, 4,070 with an animal, 1,550 moments, Izzy 1,353 /
+Oakley 60 / Ray 49, 24 multi-pet, 0 unassigned. Izzy alone must stay at
+1,378 moments and 7 chapters. If a number moves and the issue did not
+intend it to, stop — and the digest (`digest.json`) will tell you what
+moved.
 
 **Look at the actual photos.** Twice today a plausible heuristic was
 disproven in five minutes by cropping a dozen detections and looking. Do
