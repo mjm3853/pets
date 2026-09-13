@@ -493,3 +493,44 @@ over breakfast. Cleaner story than the vision's, and now a decision.
 
 #32 stays at p1 but now measures dependence on the album rather than
 choosing an input. #18 promoted to the ingest path.
+
+## 2026-09-13 — Multi-pet, built
+
+Built #22, #7, #30, #24 in one pass. Oakley and Ray are in.
+
+**#22 worked, and the Izzy invariant held exactly** — same 1,487 moment
+ids, same eras, same milestones when she is alone. With both albums added:
+Izzy 1,353, Oakley 60, Ray 49, 24 moments holding two pets, **0
+unassigned**.
+
+Zero manual fixes is the number #28 wanted, and it is worth being suspicious
+of. It is zero *because the albums are the assignment* — Google Photos
+sorted by subject (D22), so Oakley's album contains Oakley. The
+caretaker-window machinery was never exercised, and the contamination case I
+predicted (a friend's photos of Izzy from a dogsitting week) never arose.
+That case is still real; it just needs a raw roll, which is #32.
+
+**My prediction was wrong and the reason is the interesting part.** I said
+Izzy would lose exactly 18 to Oakley and 6 to Ray. She lost 25, and 24
+moments went multi-pet rather than 9. The albums brought 164 files that were
+in no roll; those landed inside existing bursts and re-clustered them. 26
+moment ids changed and all 26 were absorbed into larger bursts — D13 working
+as designed, D14 again. The prediction was computed on the old clustering
+and could not have been right.
+
+That is exactly what #7 now prints, in four lines, automatically.
+
+**Sparse pets forced a copy rewrite.** Oakley's page opened with "Nothing
+here was tagged, titled, sorted or chosen by a person", which for an
+exported album is simply false — a person chose every file in it. It now
+opens "Someone else's dog, in our photos" and the coda says plainly that a
+person put these here and that no anchor is guessed because no owner is
+present to confirm one. Worth remembering: the honest framing for a
+fragment pet is the opposite of the framing for your own.
+
+**#24 found nothing alarming, which is itself the finding.** Pages carry
+thumbnails, device models and first names; no paths, no coordinates,
+no originals. `moments.json` carries GPS on 2,944 rows and absolute paths on
+all 4,547 — so the rule is that the page is the only thing that ever leaves.
+Thumbnails being re-encoded crops strips EXIF as a side effect. `leakcheck.sh`
+is the pre-send gate and passes on all three pages.
