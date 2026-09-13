@@ -54,6 +54,13 @@ def build(d: dict, all_pets: list[dict], thumbs: dict, heroes: dict,
     # Group the queue by pet and island: six moments from one forgotten
     # fortnight on one old phone are a single question, not six.
     islands = [(p, i) for p in pets for i in p.get("islands", []) if i["review"]]
+    # An island belongs to the pet whose claim is *questioned*, not to whoever
+    # else happens to be in the frame. Grouping by the storied pet put Oakley's
+    # and Ray's album claims under one "all of these are ___" button, which is
+    # a batch mis-assignment waiting to happen.
+    def claimed(m):
+        return tuple(sorted(a["pet"] for a in m["appearances"]
+                            if a["assigned_by"] == "album"))
     islands.sort(key=lambda pi: (-pi[1]["review"], pi[1]["start"]))
     seen_ids, blocks = set(), []
     for pet, isl in islands:
@@ -61,22 +68,30 @@ def build(d: dict, all_pets: list[dict], thumbs: dict, heroes: dict,
               if i in moments and moments[i].get("needs_review") and i not in seen_ids]
         if not ms:
             continue
+        groups = {}
+        for m in ms:
+            groups.setdefault(claimed(m), []).append(m)
         seen_ids.update(m["id"] for m in ms)
-        span = (pretty(isl["start"]) if isl["start"] == isl["end"]
-                else f'{pretty(isl["start"])} &ndash; {pretty(isl["end"])}')
-        picks = "".join(
-            f'<button class="pick" type="button" data-island="{isl["start"]}"'
-            f' data-pet="{q["id"]}">{q["name"]}</button>' for q in all_pets)
-        picks += ('<button class="pick ok" type="button" data-island="confirm"'
-                  ' data-confirm="1">All correct</button>')
-        blocks.append(f"""<div class="island" data-ids="{",".join(m["id"] for m in ms)}">
+        for who, grp in sorted(groups.items(), key=lambda kv: -len(kv[1])):
+            dates = sorted(m["date"] for m in grp)
+            span = (pretty(dates[0]) if dates[0] == dates[-1]
+                    else f"{pretty(dates[0])} &ndash; {pretty(dates[-1])}")
+            label = " and ".join(by_id[x]["name"] for x in who if x in by_id) or "someone"
+            devs = sorted({m["device"] for m in grp if m["device"]})
+            picks = "".join(
+                f'<button class="pick" type="button" data-island="{dates[0]}"'
+                f' data-pet="{q["id"]}">{q["name"]}</button>' for q in all_pets)
+            picks += ('<button class="pick ok" type="button" data-island="confirm"'
+                      ' data-confirm="1">All correct</button>')
+            blocks.append(f"""<div class="island" data-ids="{",".join(m["id"] for m in grp)}">
   <div class="ihead">
-    <div><b>{pet["name"]}</b> &middot; {span}
-      <span class="imeta">{len(ms)} to check &middot; {", ".join(isl["devices"]) or "device unknown"}</span></div>
+    <div><b>Is this {label}?</b> &middot; {span}
+      <span class="imeta">{len(grp)} to check &middot; {", ".join(devs) or "device unknown"}
+      &middot; only an album says so</span></div>
     <div class="iacts"><span class="lab">All of these are</span>{picks}</div>
   </div>
   <div class="sheet">{"".join(cell(m, thumbs[m["id"]], "", order)
-                              for m in ms if m["id"] in thumbs)}</div>
+                              for m in grp if m["id"] in thumbs)}</div>
 </div>""")
     # A moment answered "not sure" leaves every pet and would otherwise leave
     # the queue too, unreachable forever. It is the one thing a person has

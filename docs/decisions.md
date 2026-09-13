@@ -794,6 +794,14 @@ button did not reveal a better album; it let the queue finish.
 affirmative must be a first-class control with its own key, not the absence
 of action. Silence is not consent and must never clear a queue item.
 
+**Corollary, learned the hard way:** a batch answer must not be ambiguous.
+Review groups were once keyed on the *storied* pet, so one island mixed
+album claims about two different animals; a single "all of these are Oakley"
+would have relabelled 8 Ray moments at `user` tier, arriving stamped as
+human-verified. Group a batch by **the claim being questioned**, and say the
+question in the header — "Is this Ray?" — so the answer cannot mean two
+things.
+
 **What would change it:** Nothing planned.
 
 ---

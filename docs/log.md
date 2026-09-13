@@ -1036,3 +1036,30 @@ to know before places carry any weight.
 gps`, a grep for decimal coordinates, and a grep for place keys all zero.
 The key is a hash, not `42.99,-71.41`, and it stays out of the HTML
 entirely — the page gets a name and a count.
+
+## 2026-09-13 — A batch button that could mis-assign in bulk
+
+Matt sent back 47 answers, all `["oakley","izzy"]` — one island click. Before
+applying, checked what those 47 actually were: **39 carried an Oakley album
+claim and 8 carried a Ray claim.** Applying as sent would have silently
+relabelled 8 Ray moments as Oakley, at `user` tier, never to be questioned
+again.
+
+The cause is mine, not his. Islands were grouped by the **storied pet** —
+Izzy, who is in nearly everything — so one island mixed album claims about
+different animals under a single "All of these are ___" button. The button
+was answering a question the group did not actually ask.
+
+Applied the 39, held the 8, and regrouped islands by **the claim under
+review** rather than by whoever else is in frame. The queue now reads "Is
+this Ray? — 8 to check", which is the question that needs answering. Verified
+the batch now writes `["ray","izzy"]` and preserves the co-present pet.
+
+Worth noting the shape of this one. It is not a coding error — the code did
+exactly what it said. It is a **UI that asked an ambiguous question and
+accepted a confident answer**, which in a correction tool is the same class
+of harm as a silent wrong answer, and arguably worse: the wrong data arrives
+stamped as human-verified. D27 said a queue must accept "yes" as easily as
+"no"; the corollary is that it must never make "yes" ambiguous.
+
+Remaining after this: 8 Ray claims and 2 deliberately unassigned.
