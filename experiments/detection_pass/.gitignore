@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+*.pt
+sample_photos/*
+!sample_photos/.gitkeep
+results.json
