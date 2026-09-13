@@ -170,3 +170,37 @@ too tight would never hit at all.
 Content digests were the point of the exercise as much as the speed — they
 are what #4 (stable identity, D13) needs, and that is now mostly a matter of
 adopting keys that already exist.
+
+## 2026-09-13 — Correctness pass
+
+Closed the three `correctness` issues. All small; two of them changed what the
+page says, which is the point.
+
+**#4, stable identity.** Moment ids are now a hash of their member media ids.
+Tested against the exact scenario that produced 100% churn this morning: 696
+moments with unchanged membership kept 100% of their ids, and of the 83 whose
+membership genuinely changed, **zero** old ids still resolve. That second
+number is the one that matters — a stale pointer now misses loudly instead of
+landing on a different plausible photo. Membership change producing a new id is
+correct, not a regression.
+
+**#5, fragile superlatives — and it immediately caught real ones.** Each
+superlative now carries the runner-up it beat. Two of three headline records
+turned out to be coin flips: the 40-frame burst beat 36 by 10%, and the 22-day
+quiet stretch beat 20 by 9%. They render as "close call" now. Worth sitting
+with: the page had been stating both as facts, and nobody would have questioned
+them. The quiet stretch is separately marked `shrinkable`, because it is the
+one record an import can *falsify* rather than merely beat — it already went
+36 → 22 days when Renee's roll merged.
+
+**#6, taken-at vs ingested-at.** `ingested_at` is memoised on content digest,
+so first sight survives re-runs and renames. Also the substrate for #7: "files
+first seen this run" is now one query.
+
+**#8 groundwork.** Added `--anchor` for a real adoption date. Kept the
+quarantine logic on the *derived* anchor deliberately — outlier detection and
+chapter-start are different jobs, and conflating them would mean a given date
+could silently quarantine real moments. Matt is supplying the actual date.
+
+Next is #9, individual pet ID, which is the heaviest remaining item and the one
+that would have caught the two stray dogs automatically.
