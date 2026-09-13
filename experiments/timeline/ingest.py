@@ -19,6 +19,8 @@ from pathlib import Path
 from PIL import Image
 from ultralytics import YOLO
 
+from cache import Cache, Digests, param_key
+
 PET_CLASSES = {"dog", "cat", "bird", "horse", "sheep", "cow", "bear"}
 MEDIA_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 VIDEO_EXTS = {".mp4", ".mov"}
@@ -66,7 +68,28 @@ def variant(name: str) -> str:
     return "photo"
 
 
-def scan(root: Path, who: str, model: YOLO, conf: float, seen: dict) -> list[dict]:
+def detect(model: YOLO, path: Path, conf: float) -> dict:
+    """The only expensive step, and a pure function of (bytes, model, conf) —
+    so it is the only thing worth caching. Everything else on a rec is cheap
+    and varies with where the file was found."""
+    r = model(str(path), conf=conf, verbose=False)[0]
+    names = [r.names[int(c)] for c in r.boxes.cls]
+    scores = r.boxes.conf.tolist()
+    boxes = r.boxes.xyxyn.tolist()
+    out = {"pet": False, "score": 0.0, "box": None,
+           "people": sum(1 for n in names if n == "person")}
+    best = -1
+    for j, n in enumerate(names):
+        if n in PET_CLASSES and scores[j] > out["score"]:
+            out["pet"], out["score"], best = True, round(scores[j], 3), j
+            out["species"] = n
+    if best >= 0:
+        out["box"] = [round(v, 4) for v in boxes[best]]
+    return out
+
+
+def scan(root: Path, who: str, model: YOLO, name: str, conf: float, seen: dict,
+         digests: Digests, cache: Cache, reuse: bool) -> list[dict]:
     paths = sorted(p for p in root.rglob("*") if p.suffix.lower() in MEDIA_EXTS | VIDEO_EXTS)
     media = []
     for i, path in enumerate(paths, 1):
@@ -106,21 +129,15 @@ def scan(root: Path, who: str, model: YOLO, conf: float, seen: dict) -> list[dic
         }
 
         if not is_video:
-            try:
-                r = model(str(path), conf=conf, verbose=False)[0]
-                names = [r.names[int(c)] for c in r.boxes.cls]
-                scores = r.boxes.conf.tolist()
-                boxes = r.boxes.xyxyn.tolist()
-                best = -1
-                for j, n in enumerate(names):
-                    if n in PET_CLASSES and scores[j] > rec["score"]:
-                        rec["pet"], rec["score"], best = True, round(scores[j], 3), j
-                        rec["species"] = n
-                if best >= 0:
-                    rec["box"] = [round(v, 4) for v in boxes[best]]
-                rec["people"] = sum(1 for n in names if n == "person")
-            except Exception as e:
-                rec["error"] = str(e)[:80]
+            key = param_key(digests.of(path), name, conf)
+            det = cache.get_json(key) if reuse else None
+            if det is None:
+                try:
+                    det = detect(model, path, conf)
+                    cache.put_json(key, det)
+                except Exception as e:
+                    rec["error"], det = str(e)[:80], {}
+            rec.update(det)
         seen[path.name] = rec
         media.append(rec)
     return media
@@ -299,6 +316,9 @@ def main():
     ap.add_argument("--model", default="yolov8n.pt")
     ap.add_argument("--rebuild", type=Path, metavar="MOMENTS.JSON",
                     help="reuse detections from a previous run; skip the model entirely")
+    ap.add_argument("--cache", type=Path, default=Path(__file__).resolve().parent / ".cache")
+    ap.add_argument("--no-cache", action="store_true",
+                    help="re-run detection even when cached; still writes results")
     args = ap.parse_args()
 
     if args.rebuild:
@@ -318,11 +338,15 @@ def main():
     if not rolls:
         raise SystemExit("pass at least one --roll NAME=PATH, or --rebuild")
 
+    cache = None
     if media is None:
+        digests, cache = Digests(args.cache), Cache(args.cache, "detect")
         model, seen, media = YOLO(args.model), {}, []
         for who, root in rolls:
             print(f"Scanning {who}: {root}")
-            media += scan(root, who, model, args.conf, seen)
+            media += scan(root, who, model, args.model, args.conf, seen,
+                          digests, cache, not args.no_cache)
+        digests.save()
     moments = build_moments(media)
     _pet = [m for m in moments if m["has_pet"] and m["dated"]]
     anchor = find_anchor(_pet) if _pet else None
@@ -381,6 +405,8 @@ def main():
               f"{r['days_only_theirs']:3d} days only they have, from {r['earliest']}")
     print(f"  co-attended moments: {mg['co_attended_moments']}  "
           f"days both were shooting: {mg['days_shared']}/{mg['days_total']}")
+    if cache:
+        print(f"\ndetection cache: {cache.rate}")
     print(f"\nWritten to {args.out}")
 
 
