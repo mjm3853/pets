@@ -693,3 +693,32 @@ which is the cross-person wedge made visible rather than argued.
 
 Extracted the burst panel and picker into one shared function so a moment
 opens and reassigns identically from any page.
+
+## 2026-09-13 — First real correction
+
+Matt used the review queue and marked one moment "not sure":
+`{"mo1ea26aa04bbedf": []}`.
+
+It was Ray's **oldest** moment — 2012-08-29, two frames on a
+SAMSUNG-SGH-I747, assigned to Ray by his album and nothing else. Exactly the
+class the queue exists for: contributor unknown, album-only, no corroborating
+signal.
+
+Applied: Ray 49 → 48 moments, review queue 63 → 62, unassigned 0 → 1. His
+`first_seen` correctly did **not** move — there is another moment three hours
+later the same evening, so the date span is still honest.
+
+Two things this confirms, both cheaply.
+
+**The round trip works end to end with a real human answer**, not a
+synthetic test: page → localStorage → tray JSON → `pet.json` → rebuild →
+counts move → re-render. Nothing overrode the user's answer on rebuild,
+which is the D21 contract.
+
+**"Not sure" is load-bearing.** Marking a 2012 photo unassigned is the
+correct outcome for a photo nobody can vouch for, and it is better than
+either alternative — silently keeping it on Ray, or discarding it. It stays
+in the archive, visible, attached to nobody, and can be answered later.
+
+One correction is not a measurement. The number that matters — corrections
+per hundred photos — still needs a real pass through the 61.
