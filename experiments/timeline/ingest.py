@@ -383,6 +383,8 @@ def main():
     ap.add_argument("--cache", type=Path, default=Path(__file__).resolve().parent / ".cache")
     ap.add_argument("--no-cache", action="store_true",
                     help="re-run detection even when cached; still writes results")
+    ap.add_argument("--species", help="the pet's species; the detector is not "
+                                      "trusted to decide this")
     ap.add_argument("--anchor", metavar="YYYY-MM-DD",
                     help="the real adoption or birth date; outranks the derived "
                          "anchor, persists to pet.json, and is never moved by a backfill")
@@ -420,11 +422,14 @@ def main():
     # re-asked, and no import can move it. The derived one stays as the
     # fallback and as the reference for spotting strays.
     conf = Path(__file__).resolve().parent / "pet.json"
-    given = args.anchor
-    if given:
-        conf.write_text(json.dumps({"anchor": given}, indent=1))
-    elif conf.exists():
-        given = json.loads(conf.read_text()).get("anchor")
+    profile = json.loads(conf.read_text()) if conf.exists() else {}
+    if args.anchor:
+        profile["anchor"] = args.anchor
+    if args.species:
+        profile["species"] = args.species
+    if args.anchor or args.species:
+        conf.write_text(json.dumps(profile, indent=1))
+    given = profile.get("anchor")
 
     _pet = [m for m in moments if m["has_pet"] and m["dated"]]
     derived = find_anchor(_pet) if _pet else None
@@ -442,7 +447,7 @@ def main():
     strays = [m for m in moments if m["has_pet"] and m["dated"] and m["before_anchor"]]
     doc = {
         "pet": {"name": args.pet,
-                "species": Counter(m.get("species") for m in pet_media).most_common(1)[0][0] if pet_media else None,
+                "species": profile.get("species"),
                 "first_seen": pet_moments[0]["date"] if pet_moments else None,
                 "last_seen": pet_moments[-1]["date"] if pet_moments else None},
         "source": {"rolls": {who: str(root) for who, root in rolls},

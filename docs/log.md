@@ -233,3 +233,31 @@ Anchor persists to `pet.json`, so it is asked once and no import can move it
 (D14, I1). Quarantine still keys off the derived anchor deliberately: outlier
 detection and chapter-start are different jobs, and conflating them would let
 a given date silently quarantine real moments.
+
+## 2026-09-13 — Dropped pet recognition, and a useful negative result
+
+Matt's call: don't invest in individual pet ID, leave it to the platforms and
+to users, flag only what is obviously wrong. Recorded as D17.
+
+Went looking for a cheap flag before closing it out, and found the opposite of
+what was expected. The archive is a dog, so a detection labelled *sheep* ought
+to be suspicious — free signal, no model needed. 294 files are labelled sheep,
+horse, cat, cow, bird or bear. Cropped the twelve highest-confidence ones and
+looked: **every single one is a dog.** A tan dog in profile scores 0.94 as
+"sheep". So the heuristic would fire 294 times and be wrong 294 times, and
+detector confidence gives no protection because it is confidently wrong.
+
+Two things follow. The detector is a reliable *animal present* signal (90%
+across three archives) and an unreliable *which animal* signal, so species
+moved to a profile field the user sets rather than a majority vote over
+detector labels. And the thing that actually caught both real stray dogs was
+temporal — the pre-anchor quarantine (D16) — with no visual reasoning at all.
+
+Worth keeping: the cheapest-looking signal was worthless and a much dumber one
+worked. Checking cost about five minutes; building the clustering pipeline
+would have cost a day and caught two photos.
+
+Incidental: a second dog, dark and merle-patterned, appears throughout the
+archive. Not an error — presumably a friend's or housemate's dog, and part of
+Izzy's life. Nothing to fix, but a reminder that "other animals in frame" is
+usually signal rather than noise.

@@ -41,7 +41,8 @@ One row per file. Cheap, immutable, never shown directly.
 | `kind` | photo / motion / portrait / night / video. Pixel encodes this in the filename |
 | `device` | EXIF make+model |
 | `gps` | present on 97% of this archive |
-| `pet`, `species`, `score`, `box` | detector output, normalized box |
+| `pet`, `score`, `box` | detector output, normalized box |
+| `species` | detector's guess, kept as evidence and **not trusted** — see below |
 | `people` | count of `person` detections — the togetherness signal |
 
 **`time_source` is not a debugging field.** 32 files (Snapchat saves) had no
@@ -154,9 +155,13 @@ a file arrived in.
 
 ## What is not in the model yet
 
-- **Individual pet ID.** Unnecessary here — 90% of a single-pet household's
-  animal photos are that pet. Required the moment a second contributor's
-  roll arrives, since theirs contains other people's dogs.
+- **Individual pet ID.** Deliberately not built (D17). 0.05% contamination
+  does not justify an embedding-and-clustering pipeline, the platforms already
+  do it, and the cheap heuristic fails: 294 files in this dog archive are
+  labelled sheep, horse, cat, cow, bird or bear and **every one is a dog**,
+  including a "sheep" at 0.94. The detector is trustworthy for *an animal is
+  present* and untrustworthy for *which animal*, so the pet's species is a
+  profile field the user sets.
 - **Place.** 97% GPS coverage, spanning roughly 41.7–45.0°N — the dog
   travels. Clustering coordinates into named places is unbuilt and looks
   cheap.

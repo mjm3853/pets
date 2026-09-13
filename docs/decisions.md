@@ -357,3 +357,41 @@ to the person who can.
 **What would change it:** Individual pet ID landing, which would let most of
 these be resolved automatically — though a human confirmation step is still
 the right default for anything that moves the anchor.
+
+---
+
+## D17 — No pet recognition; the detector answers "an animal", not "which animal"
+
+**Status:** locked · **Date:** 2026-09-13 · **Refines:** D6
+
+**Decision:** Do not build individual pet identification. Detection stays at
+"is there an animal in this frame". Species is a **profile field the user
+sets**, not a detector output. Contamination is handled by cheap temporal
+heuristics (D16) and, eventually, user correction — not by a model.
+
+**Why:** Three reasons, in order of weight.
+
+1. **The investment is disproportionate.** Contamination in the real
+   two-contributor archive is two files out of 3,924 — 0.05%. Embedding and
+   clustering 3,924 crops to catch two photos is not a good trade for an
+   indie product (D1), and the platforms are already doing this work: Apple's
+   People & Pets and Google Photos both identify individual animals. Let them,
+   and let users correct what they care about.
+2. **The cheap heuristic provably does not work.** Species mismatch looked
+   like free signal — the archive is a dog, so a "sheep" detection should be
+   suspicious. In practice 294 files are labelled sheep, horse, cat, cow, bird
+   or bear, and inspection shows **every one is a dog**, including a sheep at
+   0.94 confidence. Flagging on species would produce 294 false positives and
+   zero true positives. Detector confidence is no help either: it is
+   confidently wrong.
+3. **What does work is temporal, and already built.** Both genuine stray dogs
+   were caught by the pre-anchor quarantine (D16) without any visual
+   reasoning at all.
+
+**Consequence:** `pet.species` now comes from `pet.json`, not from a majority
+vote over detector labels. Per-file detector labels are kept as evidence but
+are not treated as truth anywhere.
+
+**What would change it:** A household with two pets that genuinely need
+separating, or contamination rising far enough that temporal heuristics stop
+coping. Neither is true today.
