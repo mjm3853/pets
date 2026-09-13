@@ -91,7 +91,10 @@ def detect(model: YOLO, path: Path, conf: float) -> dict:
 
 def scan(root: Path, who: str, model: YOLO, name: str, conf: float, seen: dict,
          digests: Digests, cache: Cache, firsts: Cache, now: str,
-         reuse: bool) -> list[dict]:
+         reuse: bool, about: str | None = None) -> list[dict]:
+    """Read one folder. `about` marks it a subject folder — every file in it is
+    a person's statement that this pet is in it, which is an assignment, not a
+    guess (D21). Most folders people hand over are this: an exported album."""
     paths = sorted(p for p in root.rglob("*") if p.suffix.lower() in MEDIA_EXTS | VIDEO_EXTS)
     media = []
     for i, path in enumerate(paths, 1):
@@ -99,7 +102,10 @@ def scan(root: Path, who: str, model: YOLO, name: str, conf: float, seen: dict,
         # them. Pixel filenames carry a millisecond timestamp, so a repeat
         # name is the same capture. First roll to claim it keeps it.
         if path.name in seen:
-            seen[path.name].setdefault("also_in", []).append(who)
+            if about:
+                seen[path.name].setdefault("assign", []).append(about)
+            else:
+                seen[path.name].setdefault("also_in", []).append(who)
             continue
         digest = digests.of(path)
         # First sight is a property of the content, so it survives re-runs,
@@ -139,6 +145,8 @@ def scan(root: Path, who: str, model: YOLO, name: str, conf: float, seen: dict,
             "box": None,
             "score": 0.0,
         }
+        if about:
+            rec["assign"] = [about]
 
         if not is_video:
             key = param_key(digest, name, conf)
@@ -219,6 +227,116 @@ def build_moments(media: list[dict]) -> list[dict]:
         cur.append(m)
     close(cur)
     return moments
+
+
+def slug(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "pet"
+
+
+def load_profile(path: Path, pet_name: str, species: str | None, anchor: str | None,
+                 rolls: list[str], abouts: list[str]) -> dict:
+    """People, pets and who may see what. The user owns everything in here;
+    nothing derived ever overwrites it."""
+    p = json.loads(path.read_text()) if path.exists() else {}
+    if "pets" not in p:  # migrate the flat {anchor, species} shape
+        p = {"pets": [{"id": slug(pet_name), "name": pet_name,
+                       **({"species": p["species"]} if p.get("species") else {}),
+                       **({"anchor": p["anchor"]} if p.get("anchor") else {})}],
+             "people": [], "access": []}
+    p.setdefault("people", [])
+    p.setdefault("access", [])
+
+    by_id = {x["id"]: x for x in p["pets"]}
+    primary = p["pets"][0] if p["pets"] else None
+    if primary and pet_name != "Pet":
+        primary["name"] = pet_name
+    if primary and species:
+        primary["species"] = species
+    if primary and anchor:
+        primary["anchor"] = anchor
+
+    # A pet named by --about that nobody has declared is created with a name
+    # and nothing else. Requiring a date or species here is exactly the
+    # friction D21 forbids.
+    for name in abouts:
+        if slug(name) not in by_id:
+            pet = {"id": slug(name), "name": name}
+            p["pets"].append(pet)
+            by_id[pet["id"]] = pet
+
+    known = {x["id"] for x in p["people"]}
+    for who in rolls:
+        if slug(who) not in known:
+            p["people"].append({"id": slug(who), "name": who})
+            known.add(slug(who))
+    # Someone who hands over their camera roll owns the pet the roll is about.
+    # That is the only access edge ever created automatically.
+    if primary:
+        have = {(a["person"], a["pet"]) for a in p["access"]}
+        for who in rolls:
+            if (slug(who), primary["id"]) not in have:
+                p["access"].append({"person": slug(who), "pet": primary["id"],
+                                    "role": "owner"})
+    path.write_text(json.dumps(p, indent=1))
+    return p
+
+
+def owned_by(profile: dict) -> dict[str, list[str]]:
+    return {x["id"]: [a["pet"] for a in profile["access"]
+                      if a["person"] == x["id"] and a["role"] == "owner"]
+            for x in profile["people"]}
+
+
+def caretaking(profile: dict, person: str, when: str) -> list[str]:
+    out = []
+    for a in profile["access"]:
+        if a["person"] != person or a["role"] != "caretaker":
+            continue
+        if a.get("from") and when < a["from"]:
+            continue
+        if a.get("to") and when > a["to"]:
+            continue
+        out.append(a["pet"])
+    return out
+
+
+def assign_appearances(moments: list[dict], media: list[dict], profile: dict) -> None:
+    """Decide which pets are in each moment, guessing as rarely as possible.
+
+    Order: a person's explicit assignment, then a dated caretaker window, then
+    a contributor's single owned pet. A contributor who owns two pets gets no
+    inference at all — ambiguity resolves to unassigned, which is visible and
+    fixable, where a wrong assignment is silent (D21).
+    """
+    by_file = {x["file"]: x for x in media}
+    owns = owned_by(profile)
+    manual = profile.get("assignments", {})
+    known = {x["id"] for x in profile["pets"]}
+
+    for m in moments:
+        found: dict[str, str] = {}
+        if m["id"] in manual:
+            for pet in manual[m["id"]]:
+                found[pet] = "user"
+        else:
+            for fname in m["files"]:
+                row = by_file.get(fname, {})
+                if not row.get("pet"):
+                    continue
+                for name in row.get("assign", []):
+                    found.setdefault(slug(name), "user")
+                if row.get("assign"):
+                    continue
+                care = caretaking(profile, slug(row["contributor"]), m["date"])
+                if len(care) == 1:
+                    found.setdefault(care[0], "caretaker")
+                    continue
+                mine = owns.get(slug(row["contributor"]), [])
+                if len(mine) == 1:
+                    found.setdefault(mine[0], "inferred")
+        m["appearances"] = [{"pet": k, "assigned_by": v}
+                            for k, v in sorted(found.items()) if k in known]
+        m["unassigned"] = m["has_pet"] and not m["appearances"]
 
 
 def find_anchor(pet: list[dict], min_run: int = 5, window: int = 30) -> datetime:
@@ -374,6 +492,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--roll", action="append", default=[],
                     metavar="NAME=PATH", help="a contributor's photo folder; repeatable")
+    ap.add_argument("--about", action="append", default=[], metavar="PET=PATH",
+                    help="a folder that is about one pet — an exported album. "
+                         "Every file in it is assigned to that pet; repeatable")
     ap.add_argument("--pet", default="Pet")
     ap.add_argument("--out", type=Path, default=Path("moments.json"))
     ap.add_argument("--conf", type=float, default=0.30)
@@ -390,20 +511,26 @@ def main():
                          "anchor, persists to pet.json, and is never moved by a backfill")
     args = ap.parse_args()
 
+    def pairs(specs, flag):
+        out = []
+        for spec in specs:
+            who, _, path = spec.partition("=")
+            if not path:
+                raise SystemExit(f"{flag} needs NAME=PATH, got {spec!r}")
+            out.append((who, Path(path)))
+        return out
+
     if args.rebuild:
         prev = json.loads(args.rebuild.read_text())
         media = prev["media"]
         rolls = [(w, Path(r)) for w, r in prev["source"]["rolls"].items()]
+        abouts = [(w, Path(r)) for w, r in prev["source"].get("about", {}).items()]
         print(f"Rebuilding from {args.rebuild}: {len(media)} media rows, no detection")
     else:
-        media = None
+        media, rolls, abouts = None, [], []
 
-    rolls = rolls if args.rebuild else []
-    for spec in args.roll:
-        who, _, path = spec.partition("=")
-        if not path:
-            raise SystemExit(f"--roll needs NAME=PATH, got {spec!r}")
-        rolls.append((who, Path(path)))
+    rolls += pairs(args.roll, "--roll")
+    abouts += pairs(args.about, "--about")
     if not rolls:
         raise SystemExit("pass at least one --roll NAME=PATH, or --rebuild")
 
@@ -416,70 +543,109 @@ def main():
             print(f"Scanning {who}: {root}")
             media += scan(root, who, model, args.model, args.conf, seen,
                           digests, cache, firsts, now, not args.no_cache)
+        # Subject folders come second so they can attach to rows the rolls
+        # already claimed rather than duplicating them.
+        for pet, root in abouts:
+            print(f"Scanning album about {pet}: {root}")
+            media += scan(root, "unknown", model, args.model, args.conf, seen,
+                          digests, cache, firsts, now, not args.no_cache, about=pet)
         digests.save()
     moments = build_moments(media)
-    # A given anchor is a fact the user owns, so it is remembered rather than
-    # re-asked, and no import can move it. The derived one stays as the
-    # fallback and as the reference for spotting strays.
     conf = Path(__file__).resolve().parent / "pet.json"
-    profile = json.loads(conf.read_text()) if conf.exists() else {}
-    if args.anchor:
-        profile["anchor"] = args.anchor
-    if args.species:
-        profile["species"] = args.species
-    if args.anchor or args.species:
-        conf.write_text(json.dumps(profile, indent=1))
-    given = profile.get("anchor")
+    profile = load_profile(conf, args.pet, args.species, args.anchor,
+                           [w for w, _ in rolls], [w for w, _ in abouts])
+    assign_appearances(moments, media, profile)
 
-    _pet = [m for m in moments if m["has_pet"] and m["dated"]]
-    derived = find_anchor(_pet) if _pet else None
-    anchor = datetime.fromisoformat(given) if given else derived
+    owns = owned_by(profile)
+    contributes = {slug(w) for w, _ in rolls}
+    # A pet only gets a life story if someone who handed over photos owns it.
+    # A friend's dog has no anchor we could confirm and usually no sustained
+    # period either — Ray is fragments across eleven years (D21).
+    storied = {p for who in contributes for p in owns.get(who, [])}
+
+    pets = []
+    for pet in profile["pets"]:
+        mine = [m for m in moments
+                if any(a["pet"] == pet["id"] for a in m["appearances"])]
+        dated = [m for m in mine if m["dated"]]
+        block = dict(pet)
+        if pet["id"] in storied and dated:
+            # A given anchor is a fact the user owns, remembered rather than
+            # re-asked; no import moves it. The derived one stays as the
+            # fallback and as the reference for spotting strays.
+            derived = find_anchor(dated)
+            anchor = datetime.fromisoformat(pet["anchor"]) if pet.get("anchor") else derived
+            for m in mine:
+                m["before_anchor"] = bool(
+                    datetime.fromisoformat(m["started_at"]) < derived)
+            keep = [m for m in dated if not m["before_anchor"]]
+            block.update(sparse=False,
+                         eras=build_eras(mine, anchor),
+                         milestones=build_milestones(mine, media),
+                         anchor=anchor.date().isoformat(),
+                         anchor_source="given" if pet.get("anchor") else "derived",
+                         anchor_derived=derived.date().isoformat(),
+                         before_anchor_moments=len(dated) - len(keep))
+        else:
+            keep = dated
+            block.update(sparse=True, eras=[], milestones=[],
+                         before_anchor_moments=0)
+        block.update(moments=len(keep), media=sum(m["media_count"] for m in keep),
+                     with_people=sum(1 for m in keep if m["with_people"]),
+                     first_seen=keep[0]["date"] if keep else None,
+                     last_seen=keep[-1]["date"] if keep else None,
+                     contributors=sorted({c for m in keep for c in m["contributors"]}))
+        pets.append(block)
+
     for m in moments:
-        m["before_anchor"] = bool(
-            derived and datetime.fromisoformat(m["started_at"]) < derived)
-    eras = build_eras(moments, anchor)
-    milestones = build_milestones(moments, media)
+        m.setdefault("before_anchor", False)
 
     pet_media = [m for m in media if m["pet"]]
-    pet_moments = [m for m in moments if m["has_pet"] and m["dated"]
-                   and not m["before_anchor"]]
     undated = [m for m in moments if not m["dated"]]
     strays = [m for m in moments if m["has_pet"] and m["dated"] and m["before_anchor"]]
+    unassigned = [m for m in moments if m["unassigned"]]
     doc = {
-        "pet": {"name": args.pet,
-                "species": profile.get("species"),
-                "first_seen": pet_moments[0]["date"] if pet_moments else None,
-                "last_seen": pet_moments[-1]["date"] if pet_moments else None},
+        "pets": pets,
         "source": {"rolls": {who: str(root) for who, root in rolls},
+                   "about": {who: str(root) for who, root in abouts},
                    "media_files": len(media),
                    "devices": dict(Counter(m["device"] for m in media if m["device"]))},
         "merge": build_merge_report(moments, media, [who for who, _ in rolls]),
         "stats": {"media_with_pet": len(pet_media), "moments": len(moments),
-                  "moments_with_pet": len(pet_moments),
-                  "moments_with_people": sum(1 for m in pet_moments if m["with_people"]),
+                  "moments_with_people": sum(1 for m in moments
+                                             if m["has_pet"] and m["with_people"]),
                   "undated_moments": len(undated),
                   "undated_media": sum(m["media_count"] for m in undated),
                   "before_anchor_moments": len(strays),
                   "before_anchor_media": sum(m["media_count"] for m in strays),
-                  "anchor": anchor.date().isoformat() if anchor else None,
-                  "anchor_source": "given" if given else "derived",
-                  "anchor_derived": derived.date().isoformat() if derived else None},
-        "eras": eras, "milestones": milestones, "moments": moments, "media": media,
+                  "unassigned_moments": len(unassigned),
+                  "unassigned_media": sum(m["media_count"] for m in unassigned)},
+        "moments": moments, "media": media,
     }
     args.out.write_text(json.dumps(doc, indent=1))
 
     s = doc["stats"]
     print(f"\n{len(media)} files -> {s['moments']} moments")
-    print(f"Pet found in {len(pet_media)} files ({len(pet_media)/max(len(media),1):.0%}), "
-          f"{s['moments_with_pet']} moments")
-    print(f"Compression: {len(pet_media)/max(s['moments_with_pet'],1):.1f} files per moment")
-    print(f"{len(eras)} eras, {len(milestones)} milestones")
-    print(f"With people: {s['moments_with_people']} moments")
+    print(f"An animal in {len(pet_media)} files ({len(pet_media)/max(len(media),1):.0%})")
     print(f"Undated (no EXIF, no date in filename): {s['undated_media']} files "
           f"in {s['undated_moments']} moments — held out of the timeline")
 
+    print(f"\nPETS")
+    for p in pets:
+        tag = "sparse, no timeline" if p["sparse"] else (
+            f"{len(p['eras'])} eras, {len(p['milestones'])} milestones, "
+            f"anchor {p['anchor']} ({p['anchor_source']})")
+        print(f"  {p['name']:10s} {p['moments']:5d} moments, {p['media']:5d} files  — {tag}")
+        if p["before_anchor_moments"]:
+            print(f"             {p['before_anchor_moments']} before the anchor, held out")
+    both = [m for m in moments if len(m["appearances"]) > 1]
+    print(f"  moments with more than one pet: {len(both)}")
+    if s["unassigned_moments"]:
+        print(f"  UNASSIGNED: {s['unassigned_moments']} moments "
+              f"({s['unassigned_media']} files) — nobody said which pet")
+
     if strays:
-        print(f"Before the anchor ({s['anchor']}): {s['before_anchor_media']} files "
+        print(f"\nBefore an anchor: {s['before_anchor_media']} files "
               f"in {len(strays)} moment(s) — held out, likely another animal")
         for m in strays[:5]:
             print(f"    {m['date']}  {m['hero']}  ({', '.join(m['contributors'])})")

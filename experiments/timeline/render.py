@@ -356,10 +356,10 @@ def cell(m: dict, src: str, name: str, order: list[str]) -> str:
     n = m["media_count"]
     size = "s3" if n >= 12 else "s2" if n >= 6 else ""
     badge = f'<span class="badge">{n}</span>' if n > 1 else ""
-    who = m["contributors"]
+    who = [c for c in m["contributors"] if c in order]
     stripe = "both" if len(who) > 1 else f"c{order.index(who[0]) % 4}" if who else ""
     label = (f'{pretty(m["date"])}, {n} frame{"" if n == 1 else "s"}'
-             f'{" · " + " and ".join(who) if who else ""}')
+             f'{" · " + " and ".join(m["contributors"]) if m["contributors"] else ""}')
     return (f'<figure class="{size}" data-m="{m["id"]}" data-date="{m["date"]}" '
             f'tabindex="0" role="button" aria-label="{label}" title="{label}">'
             f'<img src="{src}" alt="{name}, {pretty(m["date"])}" loading="lazy">'
@@ -369,6 +369,8 @@ def cell(m: dict, src: str, name: str, order: list[str]) -> str:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", type=Path, default=Path("moments.json"))
+    ap.add_argument("--pet", help="which pet to render; default is the first "
+                                  "with a timeline")
     ap.add_argument("--photos", type=Path, help="unused; paths travel in the data")
     ap.add_argument("--out", type=Path, default=Path("timeline.html"))
     ap.add_argument("--thumb", type=int, default=200)
@@ -389,9 +391,15 @@ def main():
                     args.assets == "external", not args.no_cache)
 
     d = json.loads(args.data.read_text())
-    name = d["pet"]["name"]
+    pets = d["pets"]
+    block = (next(p for p in pets if p["id"] == args.pet) if args.pet
+             else next((p for p in pets if not p["sparse"]), pets[0]))
+    pid, name, sparse = block["id"], block["name"], block["sparse"]
     moments = [m for m in d["moments"]
-               if m["has_pet"] and m["dated"] and not m.get("before_anchor")]
+               if any(a["pet"] == pid for a in m["appearances"])
+               and m["dated"] and not m.get("before_anchor")]
+    if not moments:
+        raise SystemExit(f"no dated moments for {name}")
     by_id = {m["id"]: m for m in moments}
     files = {m["id"]: Path(m["hero_path"]) for m in moments}
 
@@ -438,8 +446,8 @@ def main():
 
     # ---- chapters
     marks_by_era = {}
-    for ms in d["milestones"]:
-        for e in d["eras"]:
+    for ms in block["milestones"]:
+        for e in block["eras"]:
             if e["start"] <= ms["date"] <= e["end"]:
                 marks_by_era.setdefault(e["id"], []).append(ms)
                 break
@@ -483,7 +491,20 @@ def main():
 
     print("Encoding chapter heroes")
     chapters = []
-    for e in d["eras"]:
+    if sparse:
+        byyear = {}
+        for m in moments:
+            byyear.setdefault(m["date"][:4], []).append(m)
+        for yr, group in sorted(byyear.items()):
+            chapters.append(f"""
+<article class="chapter"><div class="wrap">
+  <p class="eyebrow">{yr}</p>
+  <h3>{len(group)} moment{"" if len(group) == 1 else "s"}</h3>
+  <div class="sheet">{"".join(cell(m, thumbs[m["id"]], name, order)
+                              for m in group if m["id"] in thumbs)}</div>
+</div></article>""")
+        d["source"]["_sparse"] = True
+    for e in (block["eras"] if not sparse else []):
         hero_m = next((m for m in moments if m["hero"] == e["hero"]), None)
         hero = assets.wide(Path(hero_m["hero_path"]) if hero_m else files[moments[0]["id"]],
                            hero_m["hero_box"] if hero_m else None, 1300, 80)
@@ -599,52 +620,100 @@ def main():
 </div></section>"""
 
     s, src = d["stats"], d["source"]
+    mlist = block["milestones"]
     span = datetime.fromisoformat(moments[-1]["date"]) - datetime.fromisoformat(moments[0]["date"])
     yrs, rem = divmod(span.days, 365)
-    gap = next((m for m in d["milestones"] if m["kind"] == "longest_gap"), None)
-    burst = next((m for m in d["milestones"] if m["kind"] == "busiest_moment"), None)
-    compression = s["media_with_pet"] / max(s["moments_with_pet"], 1)
+    gap = next((m for m in mlist if m["kind"] == "longest_gap"), None)
+    burst = next((m for m in mlist if m["kind"] == "busiest_moment"), None)
+    compression = block["media"] / max(block["moments"], 1)
 
+    coda_rows = []
+    if sparse:
+        coda_rows.append(f'<div class="row"><span class="k">{block["media"]:,}</span>'
+            f'<span class="v">photos, <b>put here by a person</b> &mdash; this is an exported '
+            f'album, not an auto-built timeline. The detector found the animal and grouped '
+            f'the bursts; deciding these are {name} was someone&rsquo;s doing, and that is '
+            f'the only honest way to know.</span></div>')
+        coda_rows.append(f'<div class="row"><span class="k">{block["moments"]}</span>'
+            f'<span class="v">moments from {block["media"]:,} files. The same burst-clustering '
+            f'as any other pet &mdash; <b>{block["media"]/max(block["moments"],1):.1f} frames per '
+            f'event</b>.</span></div>')
+        coda_rows.append('<div class="row"><span class="k">0</span>'
+            '<span class="v">chapters, anniversaries or records. There is no sustained run to '
+            'anchor on and <b>no owner here to confirm a date</b>, so none is guessed. '
+            'Fragments are shown as fragments.</span></div>')
+    else:
+        pv = sum(1 for m in block["milestones"] if m.get("provisional"))
+        coda_rows = [
+            f'<div class="row"><span class="k">90%</span><span class="v">of the dump contained a '
+            f'detectable animal. <b>Detection alone was enough</b> &mdash; no individual pet ID '
+            f'was needed to build this.</span></div>',
+            f'<div class="row"><span class="k">{block["media"]/max(block["moments"],1):.1f}&times;</span>'
+            f'<span class="v">compression from files to moments. People burst-shoot: '
+            f'<b>{block["media"]:,} photos are really {block["moments"]} events</b>'
+            + (f', the largest a {burst["label"].split(chr(8212) + " ")[-1]} run' if burst else '')
+            + '.</span></div>',
+            f'<div class="row"><span class="k">0</span><span class="v">fields typed by a human, '
+            f'beyond the adoption date. Chapters are anchored on it, so <b>every anniversary '
+            f'fell out of the data</b>.</span></div>',
+            f'<div class="row"><span class="k">{s["undated_media"]}</span><span class="v">files had no '
+            f'EXIF and no date in the filename &mdash; screenshots and saved messages. '
+            f'<b>Held out rather than guessed at.</b></span></div>',
+            f'<div class="row"><span class="k">{pv}</span><span class="v">of the derived records are '
+            f'<b>close calls</b> &mdash; they beat the runner-up by under 15%, so the next import '
+            f'could overturn them. They are marked rather than presented as facts, because an '
+            f'extremum is decided entirely by its top two values.</span></div>',
+            f'<div class="row"><span class="k">{s.get("before_anchor_media", 0)}</span>'
+            f'<span class="v">photos of the <b>wrong dog</b> &mdash; other animals in a '
+            f'contributor\'s roll, years before {name} existed. Two files were enough to drag the '
+            f'anchor back 2.5 years and invent two empty chapters, because an anchor built from a '
+            f'minimum has no defence against one outlier. Now it is the first date photography '
+            f'actually <b>sustains</b>.</span></div>',
+            f'<div class="row"><span class="k">{s["unassigned_moments"]}</span><span class="v">moments '
+            f'nobody could place. With more than one pet in the archive, a moment is assigned by a '
+            f'person or by a single unambiguous owner &mdash; never by a model. <b>Unassigned beats '
+            f'wrong</b>, because a wrong assignment is silent.</span></div>',
+        ]
+
+
+    title = f"Moments with {name}" if sparse else f"{name}, In Order"
+    years = sorted({m["date"][:4] for m in moments})
     html = f"""<meta charset="utf-8">
-<title>{name}, In Order</title>
+<title>{title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>{CSS}</style>
 
 <header><div class="wrap">
-  <p class="eyebrow">An archive nobody assembled</p>
+  <p class="eyebrow">{"Someone else's dog, in our photos" if sparse else "An archive nobody assembled"}</p>
   <h1>{name}</h1>
-  <p class="dek">{yrs} years, {rem // 30} months of photographs, pulled out of a
-  camera roll and put in order. <b>Nothing here was tagged, titled, sorted or
-  chosen by a person.</b></p>
+  <p class="dek">{f"{block['media']:,} photos of {name}, scattered across {' and '.join(c for c in block['contributors'] if c != 'unknown') or 'several'} phones between {years[0]} and {years[-1]}. Not a life &mdash; <b>the parts of one that happened to be pointed at by someone else.</b>" if sparse else f"{yrs} years, {rem // 30} months of photographs, pulled out of a camera roll and put in order. <b>Nothing here was tagged, titled, sorted or chosen by a person.</b>"}</p>
   <div class="facts">
-    <div class="fact"><span class="n">{src['media_files']:,}</span><span class="l">files in the dump</span></div>
-    <div class="fact"><span class="n">{s['media_with_pet']:,}</span><span class="l">contained {name}</span></div>
-    <div class="fact"><span class="n">{s['moments_with_pet']}</span><span class="l">distinct moments</span></div>
-    <div class="fact"><span class="n">{s['moments_with_people']}</span><span class="l">with a person in frame</span></div>
-    <div class="fact"><span class="n">{len(d['eras'])}</span><span class="l">chapters</span></div>
+    <div class="fact"><span class="n">{block['media']:,}</span><span class="l">photos of {name}</span></div>
+    <div class="fact"><span class="n">{block['moments']}</span><span class="l">distinct moments</span></div>
+    <div class="fact"><span class="n">{block['with_people']}</span><span class="l">with a person in frame</span></div>
+    <div class="fact"><span class="n">{len(block['eras']) or len(years)}</span><span class="l">{"chapters" if not sparse else "years"}</span></div>
+    <div class="fact"><span class="n">{len([c for c in block['contributors'] if c != 'unknown']) or 1}</span><span class="l">{"contributors" if len([c for c in block['contributors'] if c != 'unknown']) != 1 else "contributor"}</span></div>
   </div>
 </div></header>
 
 <section><div class="wrap">
-  <div class="shead"><h2>The rhythm of paying attention</h2>
+  <div class="shead"><h2>{"When he turned up" if sparse else "The rhythm of paying attention"}</h2>
   <p class="eyebrow">{len(seq)} months</p></div>
-  <p class="lede">One bar per month. The shape is the story: a puppy photographed
-  relentlessly, a middle stretch where she is simply part of the furniture, and
-  attention returning later.</p>
+  <p class="lede">{f"One bar per month. Most are empty, and that is the honest shape of a friend&rsquo;s dog in someone else&rsquo;s archive &mdash; visits, dogsitting, a run of days and then nothing for a year." if sparse else "One bar per month. The shape is the story: a puppy photographed relentlessly, a middle stretch where she is simply part of the furniture, and attention returning later."}</p>
   <div class="ribbon">
     <div class="bars">{bars}</div>
     <div class="yearline">{ylabels}</div>
   </div>
-  <p class="note">In {span.days:,} days, the longest {name} went unphotographed was
+  <p class="note" {"hidden" if sparse or not gap else ""}>In {span.days:,} days, the longest {name} went unphotographed was
   <strong>{gap['label'].split('— ')[-1] if gap else 'n/a'}</strong> &mdash; true of the
   archive as it stands today{', and only just: the runner-up is ' + str(gap['runner_up']) + ' days' if gap and gap.get('provisional') else ''}.
   A quiet stretch is the one record that can <em>shrink</em>, because a later
   import can land photos inside it.</p>
 </div></section>
 
-{merge_section}
+{merge_section if not sparse else ""}
 
 <section><div class="wrap">
   <div class="shead"><h2>On this day</h2>
@@ -659,33 +728,7 @@ def main():
 <div class="coda"><div class="wrap tight">
   <p class="eyebrow">What the machine actually did</p>
   <h2>The honest version</h2>
-  <div class="rows">
-    <div class="row"><span class="k">90%</span><span class="v">of the dump contained a
-      detectable dog. <b>Detection alone was enough</b> — no individual pet ID was needed
-      for a single-pet household.</span></div>
-    <div class="row"><span class="k">{compression:.1f}&times;</span><span class="v">compression from
-      files to moments. People burst-shoot: <b>{s['media_with_pet']:,} photos are really
-      {s['moments_with_pet']} events</b>, the largest a {burst['label'].split('— ')[-1] if burst else ''} run.</span></div>
-    <div class="row"><span class="k">0</span><span class="v">fields typed by a human. Chapters
-      are anchored on the first photo's date, so <b>the gotcha day and every anniversary
-      fell out of the data</b>.</span></div>
-    <div class="row"><span class="k">{s['undated_media']}</span><span class="v">files had no
-      EXIF and no date in the filename — screenshots and saved messages.
-      <b>Held out rather than guessed at.</b></span></div>
-    <div class="row"><span class="k">{sum(1 for m in d['milestones'] if m.get('provisional'))}</span><span class="v">of the
-      derived records are <b>close calls</b> — they beat the runner-up by under 15%, so the
-      next import could overturn them. They are marked rather than presented as facts,
-      because an extremum is decided entirely by its top two values.</span></div>
-    <div class="row"><span class="k">{s.get('before_anchor_media', 0)}</span><span class="v">photos of
-      the <b>wrong dog</b> — other people's animals in a contributor's roll, years before
-      {name} existed. Two files out of {s['media_with_pet']:,} were enough to drag the
-      timeline's anchor back 2.5 years and invent two empty chapters, because an anchor
-      built from a minimum has no defence against one outlier. Now the anchor is the first
-      date photography actually <b>sustains</b>.</span></div>
-    <div class="row"><span class="k">{len(src['devices'])}</span><span class="v">camera models
-      ({', '.join(src['devices'])}) — one person upgrading phones, not three contributors.
-      <b>Device is not a contributor.</b></span></div>
-  </div>
+  <div class="rows">{"".join(coda_rows)}</div>
 </div></div>
 
 <footer><div class="wrap tight">
