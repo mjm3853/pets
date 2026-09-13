@@ -261,3 +261,35 @@ Incidental: a second dog, dark and merle-patterned, appears throughout the
 archive. Not an error — presumably a friend's or housemate's dog, and part of
 Izzy's life. Nothing to fix, but a reminder that "other animals in frame" is
 usually signal rather than noise.
+
+## 2026-09-13 — Review: where this stands against the vision
+
+Nineteen commits, one day, a working two-contributor timeline. Stopped to
+review before building more. The critique lives in the conversation; the
+next steps are issues #14–#21. The short version of the critique:
+
+**Validated:** the capture inversion (90% detection across three archives,
+zero human input); the pet as the organising entity; the multi-contributor
+merge (58% more days than either roll alone, 81 moments from both cameras).
+Two of the four core objects changed under real data — a moment is a burst,
+a contributor is not a device — and both changes are load-bearing.
+
+**Not validated, and the vision says these are the point:** the consumption
+loop (resurfacing exists only as a static section; nothing tests whether it
+earns a daily open); the outward artifact (Loop B, the stated growth engine,
+has zero investment); permission friction (adb pull proves the pipeline,
+not that anyone taps "Allow all"). The chills test was never closed
+explicitly, and Renee — the second contributor — has not seen it.
+
+**Overstated in the vision:** multi-contributor is "a genuine 10x". Measured,
+it is 1.58× on coverage. Real and valuable; not 10×.
+
+**Where the day over-invested:** UI polish. The heatmap and bento sizing are
+delightful and answer no product question. The burst expansion earned its
+place by surfacing the retries. The correctness pass and the caching were the
+best hours of the day — cheap, and each caught something that would have
+shipped wrong.
+
+**Where it is still a demo:** it lives on one laptop, as a static page. The
+gap between that and "someone else uses it" is the entire product, and #21
+exists to stop that gap from being crossed by drift.
