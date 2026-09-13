@@ -353,6 +353,15 @@ def assign_appearances(moments: list[dict], media: list[dict], profile: dict) ->
             m["review_why"] = why
 
 
+def pick_hero(chunk: list[dict], chosen: list[str] | None):
+    """A person's pick beats the formula. hero_quality is a good guess at which
+    frame reads well; it has no idea which one someone loves."""
+    for m in chunk:
+        if m["id"] in (chosen or []):
+            return m
+    return max(chunk, key=lambda m: m["hero_quality"])
+
+
 def find_anchor(pet: list[dict], min_run: int = 5, window: int = 30) -> datetime:
     """The earliest date where photography actually *starts*, not the earliest
     photo. A single misdetected animal years earlier is enough to wreck a
@@ -369,7 +378,7 @@ def find_anchor(pet: list[dict], min_run: int = 5, window: int = 30) -> datetime
     return datetime.fromisoformat(pet[0]["started_at"])
 
 
-def build_eras(moments: list[dict], start: datetime) -> list[dict]:
+def build_eras(moments: list[dict], start: datetime, chosen: list[str] | None = None) -> list[dict]:
     """Chapters are life years anchored on the first photo, not calendar years.
 
     Gap-based segmentation was tried first and produced a single era: a
@@ -394,7 +403,10 @@ def build_eras(moments: list[dict], start: datetime) -> list[dict]:
             "moments": len(before),
             "media": sum(m["media_count"] for m in before),
             "with_people": sum(1 for m in before if m["with_people"]),
-            "hero": max(before, key=lambda m: m["hero_quality"])["hero"],
+            "hero": pick_hero(before, chosen)["hero"],
+            "hero_chosen": any(m["id"] in (chosen or []) for m in before),
+            "hero_options": [m["id"] for m in sorted(
+                before, key=lambda m: -m["hero_quality"])[:5]],
         })
     for yr in range(20):
         lo = start.replace(year=start.year + yr)
@@ -414,7 +426,10 @@ def build_eras(moments: list[dict], start: datetime) -> list[dict]:
             "moments": len(chunk),
             "media": sum(m["media_count"] for m in chunk),
             "with_people": sum(1 for m in chunk if m["with_people"]),
-            "hero": max(chunk, key=lambda m: m["hero_quality"])["hero"],
+            "hero": pick_hero(chunk, chosen)["hero"],
+            "hero_chosen": any(m["id"] in (chosen or []) for m in chunk),
+            "hero_options": [m["id"] for m in sorted(
+                chunk, key=lambda m: -m["hero_quality"])[:5]],
         })
     return eras
 
@@ -677,7 +692,8 @@ def main():
                     datetime.fromisoformat(m["started_at"]) < derived)
             keep = [m for m in dated if not m["before_anchor"]]
             block.update(sparse=False,
-                         eras=build_eras(mine, anchor),
+                         eras=build_eras(mine, anchor,
+                                         profile.get("heroes", {}).get(pet["id"], [])),
                          milestones=build_milestones(mine, media),
                          anchor=anchor.date().isoformat(),
                          anchor_source="given" if pet.get("anchor") else "derived",

@@ -195,6 +195,23 @@ h2 { font-size:clamp(26px,3.4vw,38px); }
 .nav .sep { flex:1 1 auto; }
 .nav .count { font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--faint); }
 
+/* cover picker */
+.covers { margin-top:26px; }
+.cover { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,2fr);
+  gap:22px; align-items:start; padding:18px 0; border-top:1px solid var(--rule); }
+.cover .now img { width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:4px;
+  display:block; box-shadow:var(--shadow); }
+.cover .now p { font-family:"IBM Plex Mono",monospace; font-size:11.5px;
+  color:var(--faint); margin:8px 0 0; }
+.cover .now b { font-family:Fraunces,Georgia,serif; font-size:19px; color:var(--ink);
+  display:block; margin-bottom:3px; }
+.opts { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; }
+.opts button { border:2px solid transparent; border-radius:4px; padding:0; background:none;
+  cursor:pointer; display:block; }
+.opts img { width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:3px; display:block; }
+.opts button[aria-pressed="true"] { border-color:var(--accent); }
+.opts button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
 /* review islands */
 .island { border:1px solid var(--rule); border-radius:6px; padding:16px 17px 17px;
   margin-top:16px; background:var(--raise); }
@@ -419,8 +436,11 @@ def burst_script(detail: dict, pets: list[dict]) -> str:
 <script>
 const M = {json.dumps(detail, separators=(',', ':'))};
 const PETS = {json.dumps([{"id": p["id"], "name": p["name"]} for p in pets], separators=(',', ':'))};
-let CHOSEN = {{}};
-try {{ CHOSEN = JSON.parse(localStorage.getItem('assign') || '{{}}'); }} catch (e) {{}}
+let CHOSEN = {{}}, HEROES = {{}};
+try {{
+  CHOSEN = JSON.parse(localStorage.getItem('assign') || '{{}}');
+  HEROES = JSON.parse(localStorage.getItem('heroes') || '{{}}');
+}} catch (e) {{}}
 const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 
 function dur(s) {{
@@ -516,7 +536,7 @@ function choose(fig, pet) {{
   else if (cur.has(pet)) cur.delete(pet);
   else cur.add(pet);
   CHOSEN[id] = [...cur];
-  try {{ localStorage.setItem('assign', JSON.stringify(CHOSEN)); }} catch (e) {{}}
+  save();
   const open = document.querySelector('.det');
   if (open) open.querySelectorAll('.who-row .pick').forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.pet
@@ -524,13 +544,37 @@ function choose(fig, pet) {{
   tray();
 }}
 
+function save() {{
+  try {{
+    localStorage.setItem('assign', JSON.stringify(CHOSEN));
+    localStorage.setItem('heroes', JSON.stringify(HEROES));
+  }} catch (e) {{}}
+}}
+
 function tray() {{
   const box = document.getElementById('tray');
-  const n = Object.keys(CHOSEN).length;
+  const n = Object.keys(CHOSEN).length
+    + Object.values(HEROES).reduce((a, v) => a + v.length, 0);
   box.hidden = !n;
   if (!n) return;
   box.querySelector('.n').textContent = n + (n === 1 ? ' change' : ' changes');
-  box.querySelector('textarea').value = JSON.stringify({{assignments: CHOSEN}}, null, 1);
+  const out = {{}};
+  if (Object.keys(CHOSEN).length) out.assignments = CHOSEN;
+  if (Object.values(HEROES).some(v => v.length)) out.heroes = HEROES;
+  box.querySelector('textarea').value = JSON.stringify(out, null, 1);
+}}
+
+function chooseHero(btn) {{
+  const box = btn.closest('.cover');
+  const pet = box.dataset.pet;
+  const ids = [...box.querySelectorAll('.opts button')].map(b => b.dataset.mid);
+  HEROES[pet] = (HEROES[pet] || []).filter(x => !ids.includes(x));
+  HEROES[pet].push(btn.dataset.mid);
+  box.querySelectorAll('.opts button').forEach(b =>
+    b.setAttribute('aria-pressed', b === btn));
+  box.querySelector('.now img').src = btn.querySelector('img').src;
+  save();
+  tray();
 }}
 
 document.addEventListener('keydown', e => {{
@@ -548,9 +592,12 @@ document.getElementById('tray-copy').addEventListener('click', async () => {{
   try {{ await navigator.clipboard.writeText(ta.value); }} catch (e) {{ document.execCommand('copy'); }}
   document.getElementById('tray-copy').textContent = 'Copied';
 }});
+document.querySelectorAll('.opts button').forEach(b =>
+  b.addEventListener('click', () => chooseHero(b)));
+
 document.getElementById('tray-clear').addEventListener('click', () => {{
-  CHOSEN = {{}};
-  try {{ localStorage.removeItem('assign'); }} catch (e) {{}}
+  CHOSEN = {{}}; HEROES = {{}};
+  try {{ localStorage.removeItem('assign'); localStorage.removeItem('heroes'); }} catch (e) {{}}
   closeBurst();
   tray();
 }});
@@ -558,7 +605,7 @@ document.querySelectorAll('.island .iacts .pick').forEach(b =>
   b.addEventListener('click', () => {{
     const isl = b.closest('.island');
     isl.dataset.ids.split(',').forEach(id => {{ CHOSEN[id] = [b.dataset.pet]; }});
-    try {{ localStorage.setItem('assign', JSON.stringify(CHOSEN)); }} catch (e) {{}}
+    save();
     isl.classList.add('done');
     isl.querySelectorAll('.iacts .pick').forEach(x =>
       x.setAttribute('aria-pressed', x === b));
@@ -579,6 +626,7 @@ def nav(pets: list[dict], here: str | None) -> str:
     bits = [link("index.html", "All pets", here is None)]
     bits += [link(f'{p["id"]}.html', p["name"], p["id"] == here) for p in pets]
     bits.append('<span class="sep"></span>')
+    bits.append(link("index.html#covers", "Covers", False))
     bits.append(link("index.html#together", "Together", False))
     bits.append(link("index.html#review", "Needs review", False))
     return f'<div class="nav"><div class="wrap">{"".join(bits)}</div></div>'
@@ -660,6 +708,15 @@ def render_all(args) -> None:
         if mine:
             hero = max(mine, key=lambda m: m["hero_quality"])
             heroes[p["id"]] = assets.wide(Path(hero["hero_path"]), hero["hero_box"], 900, 78)
+    # Cover candidates: same geometry as a chapter hero but small, so the
+    # cache does not have to encode a second size of the same crop.
+    covers = {}
+    for p in pets:
+        for e in p.get("eras", []):
+            for mid in e.get("hero_options", []):
+                m = next((x for x in d["moments"] if x["id"] == mid), None)
+                if m and mid not in covers:
+                    covers[mid] = assets.wide(Path(m["hero_path"]), m["hero_box"], 560, 74)
     digests.save()
     order = list(d["source"]["rolls"])
     # No burst frames on the index: reviewing "which animal is this" needs the
@@ -673,7 +730,7 @@ def render_all(args) -> None:
         "pets": [a["pet"] for a in m["appearances"]], "trunc": 0,
         "why": m.get("review_why", []),
     } for m in moments if m["id"] in thumbs}
-    html = index_page.build(d, d["pets"], thumbs, heroes, order, detail)
+    html = index_page.build(d, d["pets"], thumbs, heroes, order, detail, covers)
     (out_dir / "index.html").write_text(html, encoding="utf-8")
     n, b = assets.finish()
     print(f"\nWrote {out_dir / 'index.html'} — {len(pets)} pets, "

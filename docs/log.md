@@ -851,3 +851,32 @@ uncertainty is what makes this pleasant rather than manipulative.
 
 Caveat recorded in the decision itself: one session, one person, and that
 person built it. #29 — a friend with no investment — is the real test.
+
+## 2026-09-13 — First question-shaped surface: pick the covers
+
+Built the first of #35's candidates, chosen because it has the most visible
+payoff: every chapter's cover image is currently picked by `hero_quality`, a
+formula that knows which frame reads well and nothing about which one you
+love.
+
+The index now has a **Pick the covers** section: current cover large, five
+candidates beside it, click to swap. Six chapters, five options each, one
+click per answer. Picks persist in `pet.json` under `heroes`, and
+`pick_hero()` prefers them over the formula forever after — verified: one
+pick changed Year One's cover and flipped `hero_chosen` to true.
+
+Two design notes worth keeping.
+
+**Keyed by moment id, not by era.** Era ids and boundaries move when the
+anchor moves or photos arrive (D13, D14), so a pick keyed to "chapter 2"
+would drift onto a different chapter. A pick is a *moment id*, and the era
+that contains it uses it. Survives re-clustering and anchor changes.
+
+**The tray now carries two kinds of answer.** `assignments` and `heroes` in
+one JSON, so a session of mixed work — some reassignments, some covers —
+comes back as one paste. Keeping that shape stable matters: a phone UI would
+write the same thing.
+
+The remaining #35 candidates need other work first: places (#11) for "where
+is this", recap selection (#15), and the gotcha-day question has no target
+because Izzy's anchor is already given and the other three are sparse.

@@ -13,7 +13,7 @@ from render import CSS, burst_script, cell, nav, pretty
 
 
 def build(d: dict, all_pets: list[dict], thumbs: dict, heroes: dict,
-          order: list[str], detail: dict) -> str:
+          order: list[str], detail: dict, covers: dict | None = None) -> str:
     pets = [p for p in all_pets if p["moments"]]
     moments = {m["id"]: m for m in d["moments"]}
     together = [m for m in d["moments"]
@@ -95,6 +95,34 @@ def build(d: dict, all_pets: list[dict], thumbs: dict, heroes: dict,
 </div>""")
     rev_sheet = "".join(blocks)
 
+    covers = covers or {}
+    rows = []
+    for p in pets:
+        for e in p.get("eras", []):
+            opts = [m for m in e.get("hero_options", []) if m in covers]
+            if len(opts) < 2:
+                continue
+            cur = next((m for m in opts if e["hero_chosen"]
+                        and m in covers), opts[0])
+            buttons = "".join(
+                f'<button type="button" data-mid="{m}" aria-pressed="{str(m == cur).lower()}">'
+                f'<img src="{covers[m]}" alt="" loading="lazy"></button>' for m in opts)
+            rows.append(f"""<div class="cover" data-pet="{p['id']}">
+  <div class="now"><img src="{covers[cur]}" alt="{p['name']}, {e['label']}">
+    <p><b>{p['name']} &middot; {e['label']}</b>
+    {"your pick" if e["hero_chosen"] else "chosen by a formula"}</p></div>
+  <div class="opts">{buttons}</div>
+</div>""")
+    covers_section = f"""
+<section id="covers"><div class="wrap">
+  <div class="shead"><h2>Pick the covers</h2>
+  <p class="eyebrow">{len(rows)} chapters</p></div>
+  <p class="lede">Every chapter's cover is currently picked by a formula &mdash; a
+  confident detection filling the frame. It has no idea which one you like.
+  <b>Click a better one.</b></p>
+  <div class="covers">{"".join(rows)}</div>
+</div></section>""" if rows else ""
+
     total_media = sum(p["media"] for p in pets)
     return f"""<meta charset="utf-8">
 <title>The pets</title>
@@ -127,6 +155,8 @@ def build(d: dict, all_pets: list[dict], thumbs: dict, heroes: dict,
   <div class="marks">{combos}</div>
   <div class="sheet">{tog_sheet}</div>
 </div></section>
+
+{covers_section}
 
 <section id="review"><div class="wrap">
   <div class="shead"><h2>Needs review</h2>
