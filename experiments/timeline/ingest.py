@@ -465,6 +465,58 @@ def build_milestones(moments: list[dict], media: list[dict]) -> list[dict]:
     return sorted(out, key=lambda m: m["date"])
 
 
+def build_digest(doc: dict, prev: dict | None, now: str) -> dict:
+    """What this run changed. An import is an event, not a silent recompute.
+
+    Backfill routinely rewrites the past — adding two albums re-clustered 26
+    bursts and moved 25 moments between pets, none of which was visible
+    anywhere. Diffing on content ids rather than positions is what makes the
+    comparison meaningful (D13).
+    """
+    new = [x for x in doc["media"] if x["ingested_at"] == now]
+    d = {"at": now, "new_media": len(new),
+         "new_by_contributor": dict(Counter(x["contributor"] for x in new)),
+         "covering": [min((x["taken_at"][:10] for x in new), default=None),
+                      max((x["taken_at"][:10] for x in new), default=None)]}
+    if not prev:
+        d["first_run"] = True
+        return d
+
+    old_m = {m["id"] for m in prev["moments"]}
+    now_m = {m["id"] for m in doc["moments"]}
+    d["moments"] = {"before": len(old_m), "after": len(now_m),
+                    "unchanged": len(old_m & now_m),
+                    "reclustered": len(old_m - now_m), "new": len(now_m - old_m)}
+
+    oldp = {p["id"]: p for p in prev.get("pets", [])}
+    d["pets"] = {}
+    for p in doc["pets"]:
+        o = oldp.get(p["id"])
+        if not o:
+            d["pets"][p["id"]] = {"added": True, "moments": p["moments"]}
+            continue
+        change = {}
+        if o["moments"] != p["moments"]:
+            change["moments"] = [o["moments"], p["moments"]]
+        if o.get("anchor_derived") != p.get("anchor_derived"):
+            change["anchor_derived"] = [o.get("anchor_derived"), p.get("anchor_derived")]
+        oldb = {(e["start"], e["end"]) for e in o.get("eras", [])}
+        newb = {(e["start"], e["end"]) for e in p.get("eras", [])}
+        if oldb != newb:
+            change["eras"] = [len(oldb), len(newb)]
+        oldms = {(m["kind"], m["date"], m["label"]) for m in o.get("milestones", [])}
+        newms = {(m["kind"], m["date"], m["label"]) for m in p.get("milestones", [])}
+        if oldms != newms:
+            change["milestones_changed"] = [list(x) for x in sorted(newms - oldms)]
+        if change:
+            d["pets"][p["id"]] = change
+
+    def days(doc_):
+        return {m["date"] for m in doc_["moments"] if m["has_pet"] and m["dated"]}
+    d["days"] = {"before": len(days(prev)), "after": len(days(doc))}
+    return d
+
+
 def build_merge_report(moments: list[dict], media: list[dict], rolls: list[str]) -> dict:
     """How much does each roll actually add? The D6 question, quantified."""
     pet = [m for m in moments if m["has_pet"] and m["dated"] and not m["before_anchor"]]
@@ -534,10 +586,11 @@ def main():
     if not rolls:
         raise SystemExit("pass at least one --roll NAME=PATH, or --rebuild")
 
-    cache = None
+    cache, now, media_scanned = None, "", False
     if media is None:
         digests, cache = Digests(args.cache), Cache(args.cache, "detect")
         firsts, now = Cache(args.cache, "firstseen"), datetime.now().isoformat(timespec="seconds")
+        media_scanned = True
         model, seen, media = YOLO(args.model), {}, []
         for who, root in rolls:
             print(f"Scanning {who}: {root}")
@@ -622,7 +675,15 @@ def main():
                   "unassigned_media": sum(m["media_count"] for m in unassigned)},
         "moments": moments, "media": media,
     }
+    before = None
+    if args.out.exists():
+        try:
+            before = json.loads(args.out.read_text())
+        except Exception:
+            pass
+    doc["digest"] = build_digest(doc, before, now if media_scanned else "")
     args.out.write_text(json.dumps(doc, indent=1))
+    args.out.with_name("digest.json").write_text(json.dumps(doc["digest"], indent=1))
 
     s = doc["stats"]
     print(f"\n{len(media)} files -> {s['moments']} moments")
@@ -649,6 +710,34 @@ def main():
               f"in {len(strays)} moment(s) — held out, likely another animal")
         for m in strays[:5]:
             print(f"    {m['date']}  {m['hero']}  ({', '.join(m['contributors'])})")
+
+    dg = doc["digest"]
+    if dg.get("new_media") or dg.get("moments"):
+        print(f"\nTHIS IMPORT")
+        if dg["new_media"]:
+            by = ", ".join(f"{k} {v}" for k, v in dg["new_by_contributor"].items())
+            print(f"  {dg['new_media']} new files ({by}) covering "
+                  f"{dg['covering'][0]} to {dg['covering'][1]}")
+        mo = dg.get("moments")
+        if mo:
+            print(f"  moments {mo['before']} -> {mo['after']}: {mo['unchanged']} unchanged, "
+                  f"{mo['reclustered']} re-clustered, {mo['new']} new")
+        for pid, ch in dg.get("pets", {}).items():
+            if ch.get("added"):
+                print(f"  {pid}: added, {ch['moments']} moments")
+                continue
+            bits = []
+            if "moments" in ch:
+                bits.append(f"moments {ch['moments'][0]} -> {ch['moments'][1]}")
+            if "anchor_derived" in ch:
+                bits.append(f"derived anchor {ch['anchor_derived'][0]} -> {ch['anchor_derived'][1]}")
+            if "eras" in ch:
+                bits.append(f"eras {ch['eras'][0]} -> {ch['eras'][1]}")
+            if ch.get("milestones_changed"):
+                bits.append(f"{len(ch['milestones_changed'])} milestone(s) changed")
+            print(f"  {pid}: {', '.join(bits)}")
+        if "days" in dg and dg["days"]["before"] != dg["days"]["after"]:
+            print(f"  days with photos {dg['days']['before']} -> {dg['days']['after']}")
 
     mg = doc["merge"]
     print(f"\nMERGE — {len(rolls)} roll(s), {mg['shared_copies']} shared copies skipped")
