@@ -665,3 +665,37 @@ two known pets, record both rather than choosing.
 **What would change it:** Users arriving without albums — no pet grouping on
 their platform, or unwilling to export. Then onboarding needs a different
 front door, not a different engine.
+
+---
+
+## D25 — Flag uncertainty, batch the answer; do not detect outliers
+
+**Status:** locked · **Date:** 2026-09-13 · **Refines:** D17, D21, D24 · **See:** issue #33
+
+**Decision:** The product does not try to detect "wrong pet" photos. It
+flags **provenance uncertainty** — a moment vouched for by nothing but an
+album — says why, and groups the flagged moments into **islands** of
+contiguous activity so a person can answer a whole run in one click.
+
+**Why:** A fourth dog (Shadow, a different friend's) was found sitting in
+Ray's album. Two things were measured in response.
+
+The existing provenance flag **already caught it** before anyone looked:
+album-only assignment, unknown contributor. The review queue is 4% of
+assigned moments, so it is well targeted rather than noisy.
+
+A temporal-outlier heuristic would have been actively harmful. Ray's
+archive has three islands separated by year-plus gaps: 2012–13 on a Samsung,
+2015–17 on a Motorola and Nexus, 2022–26 on Pixels. The first is the wrong
+dog; the other two are his owner's old phones and genuinely him. A gap or
+device-novelty rule cannot separate them, and would flag a friend's real
+early history as suspect. **Isolation is not evidence of error** — it is
+evidence of a forgotten era, which is often the most valuable material
+(compare the prologue in D14's wake).
+
+**How to apply:** Islands are a *review aid*, never an assignment signal.
+Show the reason a moment is flagged. Prefer one question over twenty: a run
+of photos from one fortnight on one old phone is usually one answer.
+
+**What would change it:** Nothing available without recognition, which D17
+declines and D24 puts out of scope.

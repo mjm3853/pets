@@ -12,8 +12,9 @@ import json
 from render import CSS, burst_script, cell, nav, pretty
 
 
-def build(d: dict, pets: list[dict], thumbs: dict, heroes: dict,
+def build(d: dict, all_pets: list[dict], thumbs: dict, heroes: dict,
           order: list[str], detail: dict) -> str:
+    pets = [p for p in all_pets if p["moments"]]
     moments = {m["id"]: m for m in d["moments"]}
     together = [m for m in d["moments"]
                 if len(m["appearances"]) > 1 and m["dated"]]
@@ -49,8 +50,32 @@ def build(d: dict, pets: list[dict], thumbs: dict, heroes: dict,
 
     tog_sheet = "".join(cell(m, thumbs[m["id"]], "", order)
                         for m in together if m["id"] in thumbs)
-    rev_sheet = "".join(cell(m, thumbs[m["id"]], "", order)
-                        for m in review if m["id"] in thumbs)
+    # Group the queue by pet and island: six moments from one forgotten
+    # fortnight on one old phone are a single question, not six.
+    islands = [(p, i) for p in pets for i in p.get("islands", []) if i["review"]]
+    islands.sort(key=lambda pi: (-pi[1]["review"], pi[1]["start"]))
+    seen_ids, blocks = set(), []
+    for pet, isl in islands:
+        ms = [moments[i] for i in isl["ids"]
+              if i in moments and moments[i].get("needs_review") and i not in seen_ids]
+        if not ms:
+            continue
+        seen_ids.update(m["id"] for m in ms)
+        span = (pretty(isl["start"]) if isl["start"] == isl["end"]
+                else f'{pretty(isl["start"])} &ndash; {pretty(isl["end"])}')
+        picks = "".join(
+            f'<button class="pick" type="button" data-island="{isl["start"]}"'
+            f' data-pet="{q["id"]}">{q["name"]}</button>' for q in all_pets)
+        blocks.append(f"""<div class="island" data-ids="{",".join(m["id"] for m in ms)}">
+  <div class="ihead">
+    <div><b>{pet["name"]}</b> &middot; {span}
+      <span class="imeta">{len(ms)} to check &middot; {", ".join(isl["devices"]) or "device unknown"}</span></div>
+    <div class="iacts"><span class="lab">All of these are</span>{picks}</div>
+  </div>
+  <div class="sheet">{"".join(cell(m, thumbs[m["id"]], "", order)
+                              for m in ms if m["id"] in thumbs)}</div>
+</div>""")
+    rev_sheet = "".join(blocks)
 
     total_media = sum(p["media"] for p in pets)
     return f"""<meta charset="utf-8">
@@ -91,9 +116,11 @@ def build(d: dict, pets: list[dict], thumbs: dict, heroes: dict,
   <p class="lede">These rest on an album alone, and an album is a hint rather than
   proof &mdash; hand-checking a sample of one found it <b>32% wrong</b>, because
   people build a pet's album out of the occasions that pet was around and both
-  animals end up in frame. Open any of them and say who is actually there; the
-  tray collects your answers.</p>
-  <div class="sheet">{rev_sheet}</div>
+  animals end up in frame. They are grouped by the stretch of time they came
+  from, because a run of photos from one forgotten fortnight on one old phone
+  is usually <b>one question, not twenty</b>. Answer a whole group at once, or
+  open any single moment to be specific.</p>
+  {rev_sheet}
 </div></section>
 
 <footer><div class="wrap tight">
@@ -101,5 +128,5 @@ def build(d: dict, pets: list[dict], thumbs: dict, heroes: dict,
   Chapters, anniversaries, bursts and overlaps are all derived.
 </div></footer>
 
-{burst_script(detail, pets)}
+{burst_script(detail, all_pets)}
 """

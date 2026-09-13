@@ -195,6 +195,22 @@ h2 { font-size:clamp(26px,3.4vw,38px); }
 .nav .sep { flex:1 1 auto; }
 .nav .count { font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--faint); }
 
+/* review islands */
+.island { border:1px solid var(--rule); border-radius:6px; padding:16px 17px 17px;
+  margin-top:16px; background:var(--raise); }
+.ihead { display:flex; justify-content:space-between; align-items:center; gap:16px;
+  flex-wrap:wrap; margin-bottom:4px; }
+.ihead b { font-family:Fraunces,Georgia,serif; font-size:18px; }
+.imeta { font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--faint);
+  display:block; margin-top:3px; }
+.iacts { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+.iacts .lab { font-family:"IBM Plex Mono",monospace; font-size:11px;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--faint); }
+.island.done { border-color:var(--accent); }
+.island.done .sheet { opacity:.45; }
+.why { font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--faint);
+  margin-top:10px; }
+
 /* index */
 .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
   gap:20px; margin-top:34px; }
@@ -457,6 +473,8 @@ function openBurst(fig) {{
   const picks = PETS.map((p, i) =>
     '<button class="pick" type="button" data-pet="' + p.id + '" aria-pressed="'
     + chosen.includes(p.id) + '">' + p.name + '<kbd>' + (i + 1) + '</kbd></button>').join('');
+  if (d.why && d.why.length) el.querySelector('.frames').insertAdjacentHTML('afterend',
+    '<p class="why">In the review queue because ' + d.why.join(', and ') + '.</p>');
   el.querySelector('.frames').insertAdjacentHTML('afterend',
     '<div class="who-row"><span class="lab">This is</span>' + picks
     + '<button class="pick" type="button" data-pet="" aria-pressed="'
@@ -536,6 +554,18 @@ document.getElementById('tray-clear').addEventListener('click', () => {{
   closeBurst();
   tray();
 }});
+document.querySelectorAll('.island .iacts .pick').forEach(b =>
+  b.addEventListener('click', () => {{
+    const isl = b.closest('.island');
+    isl.dataset.ids.split(',').forEach(id => {{ CHOSEN[id] = [b.dataset.pet]; }});
+    try {{ localStorage.setItem('assign', JSON.stringify(CHOSEN)); }} catch (e) {{}}
+    isl.classList.add('done');
+    isl.querySelectorAll('.iacts .pick').forEach(x =>
+      x.setAttribute('aria-pressed', x === b));
+    closeBurst();
+    tray();
+  }}));
+
 tray();
 </script>
 """
@@ -600,6 +630,7 @@ def render_all(args) -> None:
             "--quality", str(args.quality), "--frame", str(args.frame),
             "--frame-quality", str(args.frame_quality),
             "--max-frames", str(args.max_frames)]
+    pets = [p for p in pets if p["moments"]]
     for p in pets:
         page = out_dir / f"{p['id']}.html"
         print(f"--- {p['name']}")
@@ -638,8 +669,9 @@ def render_all(args) -> None:
         "dev": m["device"] or "", "ht": 0, "f": [],
         "hw": m.get("hero_by", ""), "who": m.get("contributors", []),
         "pets": [a["pet"] for a in m["appearances"]], "trunc": 0,
+        "why": m.get("review_why", []),
     } for m in moments if m["id"] in thumbs}
-    html = index_page.build(d, pets, thumbs, heroes, order, detail)
+    html = index_page.build(d, d["pets"], thumbs, heroes, order, detail)
     (out_dir / "index.html").write_text(html, encoding="utf-8")
     n, b = assets.finish()
     print(f"\nWrote {out_dir / 'index.html'} — {len(pets)} pets, "

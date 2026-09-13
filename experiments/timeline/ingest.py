@@ -345,6 +345,12 @@ def assign_appearances(moments: list[dict], media: list[dict], profile: dict) ->
         # wrong. Not an error — a question for the person who was there.
         m["needs_review"] = bool(m["appearances"]) and all(
             a["assigned_by"] == "album" for a in m["appearances"])
+        if m["needs_review"]:
+            why = ["only an album says so"]
+            if all(by_file.get(f, {}).get("contributor") == "unknown"
+                   for f in m["files"]):
+                why.append("nobody here took it")
+            m["review_why"] = why
 
 
 def find_anchor(pet: list[dict], min_run: int = 5, window: int = 30) -> datetime:
@@ -525,6 +531,36 @@ def build_digest(doc: dict, prev: dict | None, now: str) -> dict:
     return d
 
 
+def find_islands(moments: list[dict], pid: str, gap_days: int = 365) -> list[dict]:
+    """Runs of activity separated by long silences.
+
+    Not an outlier detector — tried that, and it fires on legitimate history:
+    Ray's 2012 and 2015 islands are his owner's old phones and genuinely him,
+    while a third dog hides in the same shape. What islands are good for is
+    *batching* a review: six moments from one forgotten fortnight are one
+    question, not six.
+    """
+    ms = sorted([m for m in moments
+                 if any(a["pet"] == pid for a in m["appearances"]) and m["dated"]],
+                key=lambda m: m["started_at"])
+    if not ms:
+        return []
+    groups, cur = [], [ms[0]]
+    for a, b in zip(ms, ms[1:]):
+        if (datetime.fromisoformat(b["started_at"])
+                - datetime.fromisoformat(a["started_at"])).days > gap_days:
+            groups.append(cur)
+            cur = []
+        cur.append(b)
+    groups.append(cur)
+    return [{"pet": pid, "start": g[0]["date"], "end": g[-1]["date"],
+             "moments": len(g),
+             "review": sum(1 for m in g if m.get("needs_review")),
+             "devices": sorted({m["device"] for m in g if m["device"]}),
+             "ids": [m["id"] for m in g]}
+            for g in groups]
+
+
 def build_merge_report(moments: list[dict], media: list[dict], rolls: list[str]) -> dict:
     """How much does each roll actually add? The D6 question, quantified."""
     pet = [m for m in moments if m["has_pet"] and m["dated"] and not m["before_anchor"]]
@@ -656,6 +692,7 @@ def main():
                      first_seen=keep[0]["date"] if keep else None,
                      last_seen=keep[-1]["date"] if keep else None,
                      contributors=sorted({c for m in keep for c in m["contributors"]}))
+        block["islands"] = find_islands(moments, pet["id"])
         pets.append(block)
 
     for m in moments:

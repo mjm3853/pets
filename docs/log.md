@@ -722,3 +722,34 @@ in the archive, visible, attached to nobody, and can be answered later.
 
 One correction is not a measurement. The number that matters — corrections
 per hundred photos — still needs a real pass through the 61.
+
+## 2026-09-13 — A fourth dog, and what not to build
+
+The moment Matt marked "not sure" turned out to be **Shadow**, another
+friend's dog, sitting inside Ray's album. So the album contained two
+different friends' dogs, neither of them declared.
+
+He asked whether outlier heuristics would help. Measured before building,
+and the answer was no — twice over.
+
+**The existing flag already caught it.** That moment was in the review queue
+before he opened it: album-only assignment, unknown contributor. The queue is
+4% of assigned moments, so it is targeted, not noise. Nothing new was needed
+to *find* it.
+
+**A temporal-outlier rule would have been harmful.** Ray has three islands
+separated by year-plus gaps — 2012–13 on a Samsung, 2015–17 on a Motorola and
+Nexus, 2022–26 on Pixels. The first is Shadow. The other two are his owner's
+old phones and genuinely Ray. No gap or device-novelty rule separates them,
+and shipping one would have flagged a friend's real early history as suspect.
+Isolation is not evidence of error; it is evidence of a forgotten era, which
+is usually the good stuff.
+
+So D25: flag provenance, not outliers — and spend the effort on making the
+answer cheap instead. The queue now groups into islands with a one-click
+"all of these are ___". Ray's 2012–13 Samsung island is six moments and
+**one click**; verified, it wrote six corrections from one button.
+
+Added Shadow as a pet with nothing but a name, which the model now supports
+without complaint — no species, no date, no album. A pet with no moments
+appears in every picker but gets no page until something is assigned to it.
