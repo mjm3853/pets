@@ -11,6 +11,13 @@ Hub repo for the pet memory product — an app that auto-builds a pet's life tim
 - [docs/data-model.md](docs/data-model.md) — the core object model. Every claim measured against a real archive.
 - [docs/ideas.md](docs/ideas.md) — parking lot for problems worth solving later, deliberately unsolved.
 
+## Tracking
+
+Work lives in [GitHub issues](https://github.com/mjm3853/pets/issues), labelled
+`now` / `next` / `later`. The `correctness` label marks silent-wrong-answer
+risks, which outrank everything else — two of the three findings so far were
+bugs that produced plausible wrong output rather than errors.
+
 ## Experiments
 
 [`experiments/timeline/`](experiments/timeline/) ingests a folder of photos into a moment graph and renders it as a self-contained page. Run against 1,982 files covering one dog over five and a half years, it found the pet in 90% of files and collapsed them into 723 moments across six auto-derived chapters.

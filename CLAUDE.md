@@ -34,6 +34,14 @@ user raising it first.
   a conversation makes or changes a decision, add or update an entry there
   (with status locked/proposed/superseded) rather than letting it live only
   in chat history. Don't edit the vision doc's §3 table to track decisions.
+- Work is tracked in **GitHub issues** on `mjm3853/pets` (`gh issue list`).
+  Labels: `now` / `next` / `later` for scheduling, `correctness` / `ingest` /
+  `experience` / `perf` for kind. `correctness` means a silent-wrong-answer
+  risk and outranks everything else. Issues link back to the docs for
+  reasoning; the docs stay the source of truth, issues are the queue.
+- [docs/log.md](docs/log.md) is an append-only working log. Add a dated entry
+  when something is learned or measured. **Never edit or delete past
+  entries** — if one turns out to be wrong, write a new entry saying so.
 - [docs/ideas.md](docs/ideas.md) is the parking lot for problems worth
   solving later but deliberately not solved yet. Put open problems there,
   not in decisions.md. [docs/data-model.md](docs/data-model.md) holds the
