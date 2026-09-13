@@ -1,8 +1,8 @@
 # Core data model
 
-Derived from a real archive, not from first principles: 1,274 files covering
-one dog across five years and three phones (`experiments/timeline/`). Every
-claim below is something the dump actually demonstrated.
+Derived from a real archive, not from first principles: 1,982 files covering
+one dog across five and a half years and three phones (`experiments/timeline/`).
+Every claim below is something the dump actually demonstrated.
 
 The vision doc names four objects — `pet` / `moment` / `contributor` /
 `milestone`. Running real data through them changed two of the four.
@@ -11,10 +11,11 @@ The vision doc names four objects — `pet` / `moment` / `contributor` /
 
 ## The load-bearing insight: a file is not a moment
 
-1,144 photos of Izzy are **549 moments**. People burst-shoot: three frames in
+1,782 photos of Izzy are **723 moments**. People burst-shoot: three frames in
 twenty-two seconds is one event, not three. Clustering media by a 20-minute
-gap collapses the archive 2.1× and is the difference between a wall of
-near-duplicates and a readable life.
+gap collapses the archive 2.5× and is the difference between a wall of
+near-duplicates and a readable life. The ratio rises with excitement — the
+puppy months burst harder than the adult years.
 
 This is the unit the whole product narrates in. Getting it wrong means the
 timeline shows the same dog in the same pose eight times and feels like a
@@ -72,10 +73,13 @@ the longest gap in this archive is 36 days.
 
 Life years anchored on the **first photo** produced six clean chapters, each
 ending days before the next anniversary. No tuning, no thresholds, and it
-matches how people already talk ("her first year"). The gotcha day —
-July 19 — fell out of the data with zero user input.
+matches how people already talk ("her first year").
 
-Anchor on first-seen, not January 1.
+Anchor on first-seen, not January 1 — but hold the anchor loosely. A second
+import of this same archive added 708 earlier photos and moved it 103 days,
+taking all five anniversaries with it. See [D14](decisions.md) and
+[I1](ideas.md): the past is never settled, and anything derived from the
+earliest photo is provisional.
 
 ## `milestone`
 
@@ -86,7 +90,15 @@ five years the longest she went unphotographed was 36 days" is a sentence
 no user would ever think to write down.
 
 Milestones are **pointers** (`kind`, `date`, `label`, `moment`), not content.
-They attach to the timeline rather than living in it.
+They attach to the timeline rather than living in it — which makes the
+identity of what they point at load-bearing. Positional moment IDs are
+disqualified ([D13](decisions.md)); a re-ingest renumbered every moment and
+each stale pointer resolved silently to a different, plausible photo.
+
+Every milestone here is also a **maximum over the archive**, so any import
+can dethrone one, and a "longest quiet stretch" can even shrink. Superlatives
+already shown to a user must be treated as versioned observations, not
+standing records.
 
 ## `contributor` — and why device is not one
 

@@ -34,6 +34,13 @@ user raising it first.
   a conversation makes or changes a decision, add or update an entry there
   (with status locked/proposed/superseded) rather than letting it live only
   in chat history. Don't edit the vision doc's §3 table to track decisions.
+- [docs/ideas.md](docs/ideas.md) is the parking lot for problems worth
+  solving later but deliberately not solved yet. Put open problems there,
+  not in decisions.md. [docs/data-model.md](docs/data-model.md) holds the
+  object model, and every claim in it is grounded in measured data.
+- Never identify anything by array position or sort order — see D13. A
+  re-ingest renumbered 100% of moments and made stale pointers resolve
+  silently to the wrong photo. This applies to experiment scripts too.
 - The founding household is on Android phones plus a Mac; there are no
   iPhones to test with. Don't propose iOS-only tooling (Vision framework,
   osxphotos, Photos.app export) as the primary path.

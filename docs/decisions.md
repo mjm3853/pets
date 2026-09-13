@@ -253,3 +253,60 @@ heuristic for stitching one person's history across upgrades.
 still needs a second household member's roll.
 
 **What would change it:** Nothing planned.
+
+---
+
+## D13 — Moment identity must be stable across re-ingest
+
+**Status:** locked (constraint), mechanism open · **Date:** 2026-09-13
+**See:** [ideas.md I1](ideas.md) for the options and the wider backfill problem
+
+**Decision:** A moment's identifier must not depend on its position in the
+archive. The current positional scheme (`m0000`, `m0001`, … assigned by sort
+order at build time) is disqualified. Which scheme replaces it —
+content-addressed, persisted UUID, or time-based with merge/split lineage —
+is deliberately left open until ingest is built for real.
+
+**Why:** Measured, not theorized. Adding 708 photos that predated the
+archive renumbered **100% of 587 existing moments**. Every stale pointer then
+resolved to a different but entirely plausible photo: the "first photo"
+milestone silently pointed at an unrelated Tuesday. Silent wrong answers are
+the worst failure mode available to a memory product — there is no error to
+catch, and the user has no reason to doubt what they are shown. Favorites,
+share links, print orders, notification deep links and comment anchors would
+all drift identically.
+
+**How to apply:** Treat any ID derived from ordering, indexing, or array
+position as a bug in this codebase, including in throwaway experiment
+scripts, because experiment output is what product decisions get read off.
+
+**What would change it:** Nothing. The constraint is proven; only the
+mechanism is open.
+
+---
+
+## D14 — The past is never settled
+
+**Status:** locked (principle) · **Date:** 2026-09-13
+**See:** [ideas.md I1](ideas.md)
+
+**Decision:** Ingest is incremental and late-arriving media routinely lands
+*before* everything already known. No derived fact may assume the earliest
+photo is final.
+
+**Why:** Backfill is the normal onboarding path, not an edge case: cloud-only
+photos imported later, a second contributor whose roll reaches back further
+than the owner's, rescues and rehomings, old phones, scanned prints. In the
+test archive a single second import moved the anchor date 103 days earlier
+and changed 9 of 10 milestones. Anything anchored on "first photo" — the
+gotcha day, every anniversary, every chapter boundary in D10 — is provisional
+and may stay provisional for years.
+
+**How to apply:** Derived superlatives and anchors are recomputed, versioned,
+and never re-notified as if new. Anniversaries in particular should be
+human-ratified rather than silently celebrated off a derived date. Design
+import as a visible event with a digest, not a silent recompute — a backfill
+reaching into the past is *new old memories*, the most emotionally valuable
+thing this product can deliver, and hiding it wastes that.
+
+**What would change it:** Nothing planned.
