@@ -206,6 +206,10 @@ h2 { font-size:clamp(26px,3.4vw,38px); }
 .mark { font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--soft);
   border:1px solid var(--rule); border-radius:999px; padding:5px 12px; background:var(--raise); }
 .mark b { color:var(--accent); font-weight:500; }
+.mark.prov { border-style:dashed; }
+.mark.prov b { color:var(--soft); }
+.mark.prov::after { content:"close call"; font-size:10px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--faint); margin-left:8px; }
 
 /* coda */
 .coda { background:var(--raise); border-top:1px solid var(--rule); padding:64px 0 80px; }
@@ -319,6 +323,16 @@ class Images:
 
 def pretty(d: str) -> str:
     return datetime.fromisoformat(d).strftime("%b %-d, %Y")
+
+
+def tip(ms: dict) -> str:
+    if not ms.get("provisional"):
+        return ""
+    why = (f"Beat the runner-up ({ms['runner_up']}) by only {ms['margin']:.0%}"
+           + (", and a quiet stretch can shrink when new photos land inside it"
+              if ms.get("shrinkable") else "")
+           + ". The next import could overturn it.")
+    return f' title="{why}"'
 
 
 def chapter_split(inside: list[dict], order: list[str]) -> str:
@@ -512,7 +526,8 @@ def main():
         sheet = "".join(cell(m, thumbs[m["id"]], name, order)
                         for m in inside if m["id"] in thumbs)
         marks = "".join(
-            f'<span class="mark"><b>{ms["label"]}</b> · {pretty(ms["date"])}</span>'
+            f'<span class="mark{" prov" if ms.get("provisional") else ""}"'
+            f'{tip(ms)}><b>{ms["label"]}</b> · {pretty(ms["date"])}</span>'
             for ms in marks_by_era.get(e["id"], []))
         days = (datetime.fromisoformat(e["end"]) - datetime.fromisoformat(e["start"])).days + 1
         chapters.append(f"""
@@ -620,7 +635,10 @@ def main():
     <div class="yearline">{ylabels}</div>
   </div>
   <p class="note">In {span.days:,} days, the longest {name} went unphotographed was
-  <strong>{gap['label'].split('— ')[-1] if gap else 'n/a'}</strong>.</p>
+  <strong>{gap['label'].split('— ')[-1] if gap else 'n/a'}</strong> &mdash; true of the
+  archive as it stands today{', and only just: the runner-up is ' + str(gap['runner_up']) + ' days' if gap and gap.get('provisional') else ''}.
+  A quiet stretch is the one record that can <em>shrink</em>, because a later
+  import can land photos inside it.</p>
 </div></section>
 
 {merge_section}
@@ -651,6 +669,10 @@ def main():
     <div class="row"><span class="k">{s['undated_media']}</span><span class="v">files had no
       EXIF and no date in the filename — screenshots and saved messages.
       <b>Held out rather than guessed at.</b></span></div>
+    <div class="row"><span class="k">{sum(1 for m in d['milestones'] if m.get('provisional'))}</span><span class="v">of the
+      derived records are <b>close calls</b> — they beat the runner-up by under 15%, so the
+      next import could overturn them. They are marked rather than presented as facts,
+      because an extremum is decided entirely by its top two values.</span></div>
     <div class="row"><span class="k">{s.get('before_anchor_media', 0)}</span><span class="v">photos of
       the <b>wrong dog</b> — other people's animals in a contributor's roll, years before
       {name} existed. Two files out of {s['media_with_pet']:,} were enough to drag the

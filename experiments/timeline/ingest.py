@@ -10,6 +10,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import re
 from collections import Counter
@@ -89,7 +90,8 @@ def detect(model: YOLO, path: Path, conf: float) -> dict:
 
 
 def scan(root: Path, who: str, model: YOLO, name: str, conf: float, seen: dict,
-         digests: Digests, cache: Cache, reuse: bool) -> list[dict]:
+         digests: Digests, cache: Cache, firsts: Cache, now: str,
+         reuse: bool) -> list[dict]:
     paths = sorted(p for p in root.rglob("*") if p.suffix.lower() in MEDIA_EXTS | VIDEO_EXTS)
     media = []
     for i, path in enumerate(paths, 1):
@@ -99,6 +101,14 @@ def scan(root: Path, who: str, model: YOLO, name: str, conf: float, seen: dict,
         if path.name in seen:
             seen[path.name].setdefault("also_in", []).append(who)
             continue
+        digest = digests.of(path)
+        # First sight is a property of the content, so it survives re-runs,
+        # renames and re-imports. Resurfacing keys off taken_at; "what changed"
+        # keys off this. They are never interchangeable.
+        first_seen = firsts.get_json(digest)
+        if first_seen is None:
+            first_seen = now
+            firsts.put_json(digest, first_seen)
         if i % 100 == 0:
             print(f"  {i}/{len(paths)}")
         is_video = path.suffix.lower() in VIDEO_EXTS
@@ -113,8 +123,10 @@ def scan(root: Path, who: str, model: YOLO, name: str, conf: float, seen: dict,
 
         rec = {
             "file": path.name,
+            "id": digest,
             "path": str(path),
             "contributor": who,
+            "ingested_at": first_seen,
             "taken_at": taken_at,
             "time_source": source,
             "kind": "video" if is_video else variant(path.name),
@@ -129,7 +141,7 @@ def scan(root: Path, who: str, model: YOLO, name: str, conf: float, seen: dict,
         }
 
         if not is_video:
-            key = param_key(digests.of(path), name, conf)
+            key = param_key(digest, name, conf)
             det = cache.get_json(key) if reuse else None
             if det is None:
                 try:
@@ -141,6 +153,18 @@ def scan(root: Path, who: str, model: YOLO, name: str, conf: float, seen: dict,
         seen[path.name] = rec
         media.append(rec)
     return media
+
+
+def moment_id(group: list[dict]) -> str:
+    """Identity from membership, so a re-ingest cannot silently repoint it.
+
+    Positional ids renumbered 100% of moments when 708 earlier photos arrived,
+    and every stale pointer resolved to a different, plausible photo (D13).
+    Hashing the member set means a moment that gains or loses a frame gets a
+    new id and a stale pointer MISSES — loud, not silent.
+    """
+    return "mo" + hashlib.sha256(
+        "".join(sorted(g["id"] for g in group)).encode()).hexdigest()[:14]
 
 
 def build_moments(media: list[dict]) -> list[dict]:
@@ -162,7 +186,7 @@ def build_moments(media: list[dict]) -> list[dict]:
         withpet = [g for g in group if g["pet"]]
         hero = max(withpet or group, key=quality)
         moments.append({
-            "id": f"m{len(moments):04d}",
+            "id": moment_id(group),
             "started_at": min(times).isoformat(),
             "ended_at": max(times).isoformat(),
             "date": min(times).date().isoformat(),
@@ -213,7 +237,7 @@ def find_anchor(pet: list[dict], min_run: int = 5, window: int = 30) -> datetime
     return datetime.fromisoformat(pet[0]["started_at"])
 
 
-def build_eras(moments: list[dict]) -> list[dict]:
+def build_eras(moments: list[dict], start: datetime) -> list[dict]:
     """Chapters are life years anchored on the first photo, not calendar years.
 
     Gap-based segmentation was tried first and produced a single era: a
@@ -223,7 +247,6 @@ def build_eras(moments: list[dict]) -> list[dict]:
     pet = [m for m in moments if m["has_pet"] and m["dated"] and not m["before_anchor"]]
     if not pet:
         return []
-    start = datetime.fromisoformat(pet[0]["started_at"])
     eras = []
     for yr in range(20):
         lo = start.replace(year=start.year + yr)
@@ -247,6 +270,22 @@ def build_eras(moments: list[dict]) -> list[dict]:
     return eras
 
 
+def superlative(values: list[float]) -> dict:
+    """A maximum plus the runner-up it beat.
+
+    Every superlative here is an extremum, and extrema are decided by their
+    top two values. When those are close the winner is a coin flip that the
+    next import can flip back, so it is marked provisional rather than shown
+    as a standing record (D15).
+    """
+    top = max(values)
+    rest = [v for v in values if v != top] or [0]
+    second = max(rest)
+    margin = (top - second) / top if top else 0
+    return {"value": top, "runner_up": second, "margin": round(margin, 3),
+            "provisional": margin < 0.15}
+
+
 def build_milestones(moments: list[dict], media: list[dict]) -> list[dict]:
     """Facts worth telling a person, derived rather than entered."""
     pet = [m for m in moments if m["has_pet"] and m["dated"] and not m["before_anchor"]]
@@ -258,18 +297,26 @@ def build_milestones(moments: list[dict], media: list[dict]) -> list[dict]:
     ]
     busiest = max(pet, key=lambda m: m["media_count"])
     out.append({"kind": "busiest_moment", "date": busiest["date"],
-                "label": f"Longest single burst — {busiest['media_count']} frames", "moment": busiest["id"]})
+                "label": f"Longest single burst — {busiest['media_count']} frames",
+                "moment": busiest["id"],
+                **superlative([m["media_count"] for m in pet])})
 
     by_day = Counter(m["date"] for m in pet)
     day, n = by_day.most_common(1)[0]
-    out.append({"kind": "busiest_day", "date": day, "label": f"Most photographed day — {n} moments"})
+    out.append({"kind": "busiest_day", "date": day,
+                "label": f"Most photographed day — {n} moments",
+                **superlative(list(by_day.values()))})
 
     gaps = [(datetime.fromisoformat(b["started_at"]) - datetime.fromisoformat(a["ended_at"]), a, b)
             for a, b in zip(pet, pet[1:])]
     if gaps:
         g, a, b = max(gaps, key=lambda x: x[0])
+        # A gap can *shrink* when photos land inside it, so unlike the other
+        # superlatives this one can be falsified by an import, not just beaten.
         out.append({"kind": "longest_gap", "date": b["date"],
-                    "label": f"Longest quiet stretch — {g.days} days", "moment": b["id"]})
+                    "label": f"Longest quiet stretch — {g.days} days", "moment": b["id"],
+                    "shrinkable": True,
+                    **superlative([x[0].days for x in gaps])})
 
     start = datetime.fromisoformat(pet[0]["started_at"])
     for yr in range(1, 20):
@@ -319,6 +366,9 @@ def main():
     ap.add_argument("--cache", type=Path, default=Path(__file__).resolve().parent / ".cache")
     ap.add_argument("--no-cache", action="store_true",
                     help="re-run detection even when cached; still writes results")
+    ap.add_argument("--anchor", metavar="YYYY-MM-DD",
+                    help="the real adoption or birth date; outranks the derived "
+                         "anchor and is never moved by a backfill")
     args = ap.parse_args()
 
     if args.rebuild:
@@ -341,19 +391,21 @@ def main():
     cache = None
     if media is None:
         digests, cache = Digests(args.cache), Cache(args.cache, "detect")
+        firsts, now = Cache(args.cache, "firstseen"), datetime.now().isoformat(timespec="seconds")
         model, seen, media = YOLO(args.model), {}, []
         for who, root in rolls:
             print(f"Scanning {who}: {root}")
             media += scan(root, who, model, args.model, args.conf, seen,
-                          digests, cache, not args.no_cache)
+                          digests, cache, firsts, now, not args.no_cache)
         digests.save()
     moments = build_moments(media)
     _pet = [m for m in moments if m["has_pet"] and m["dated"]]
-    anchor = find_anchor(_pet) if _pet else None
+    derived = find_anchor(_pet) if _pet else None
+    anchor = datetime.fromisoformat(args.anchor) if args.anchor else derived
     for m in moments:
         m["before_anchor"] = bool(
-            anchor and datetime.fromisoformat(m["started_at"]) < anchor)
-    eras = build_eras(moments)
+            derived and datetime.fromisoformat(m["started_at"]) < derived)
+    eras = build_eras(moments, anchor)
     milestones = build_milestones(moments, media)
 
     pet_media = [m for m in media if m["pet"]]
@@ -377,7 +429,9 @@ def main():
                   "undated_media": sum(m["media_count"] for m in undated),
                   "before_anchor_moments": len(strays),
                   "before_anchor_media": sum(m["media_count"] for m in strays),
-                  "anchor": anchor.date().isoformat() if anchor else None},
+                  "anchor": anchor.date().isoformat() if anchor else None,
+                  "anchor_source": "given" if args.anchor else "derived",
+                  "anchor_derived": derived.date().isoformat() if derived else None},
         "eras": eras, "milestones": milestones, "moments": moments, "media": media,
     }
     args.out.write_text(json.dumps(doc, indent=1))
