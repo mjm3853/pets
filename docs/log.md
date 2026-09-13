@@ -379,3 +379,27 @@ files carry home coordinates, and it should be written before the first byte
 leaves the laptop.
 
 Proposed D20 as the go/stop criterion. Matt's version wins.
+
+## 2026-09-13 — The plan for outside feedback
+
+Matt's plan, better than the one I proposed: collect friends' dog photos,
+ingest them himself, stress-test the multi-pet model on real contaminated
+data, then send each friend their own dog's timeline and write down what
+they say. Nobody installs anything; Matt is the operator. Issues #28, #29.
+
+Two things this changes. The multi-pet model (#22) moves from "product,
+later" to the gate for the next data arriving — it has to be built and
+proven byte-identical on Izzy before the first friend's folder lands.
+And one-command setup (#23) drops to milestone 3, because the operator is
+Matt and the friends only need to receive a file.
+
+The contamination case is now the whole test, and it is worth stating
+plainly so nobody is surprised. With no recognition (D17), a friend's
+photos of Izzy from the week they dogsat her will be assigned to the
+friend's own dog unless there is a caretaker edge for that week. That is
+the case the model exists for, and the number to watch is **manual fixes
+per hundred photos**. If it is small, multi-pet works without recognition.
+If it is large, D17 gets revisited with evidence rather than guesswork.
+
+D20's go criterion changed to match: three friends see their dog's timeline
+and react; the strongest signal is one who sends more photos unasked.

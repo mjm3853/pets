@@ -463,18 +463,22 @@ cheap and local: will they keep opening a feed after two weeks (#16); would
 either of them send a generated recap to someone outside the house (#15);
 will strangers grant full photo access (#17).
 
-**Milestone 2, Household #2** — make it runnable by someone who is not us.
-Takeout import (#18), one-command setup (#23), a threat model before any
-data leaves the founders' laptop (#24). The friend with the merle dog is the
-first outside user. This is what breaks n=1.
+**Milestone 2, Household #2** — get other people's pets and other people's
+reactions in, without anyone installing anything. Matt collects friends'
+dog photos and ingests them himself (#28), which stress-tests the multi-pet
+model (#22) on real contaminated data; each friend then gets their own
+dog's timeline and their reaction goes in the log (#29). A threat model
+comes first, before any output leaves the laptop (#24). Takeout import (#18)
+is the realistic way friends hand over photos. This is what breaks n=1.
 
 **Milestone 3, Product** — identity (#25), where data lives (#26),
 deployment (#27), the multi-pet model (#22), ownership (#20). Every one is
 gated on the first two.
 
 **Go** means all three of: the feed is still being opened at two weeks; at
-least one recap was actually sent; household #2 ran it and reacted the way
-Matt and Renee did. **Stay personal** is the outcome if any fail — a tool
+least one recap was actually sent; at least three friends have seen their
+own dog's timeline and reacted the way Matt and Renee did — with the
+strongest signal being a friend who sends more photos unasked. **Stay personal** is the outcome if any fail — a tool
 two people keep using is a success by the vision's own definition of indie
 (D1). Either way, the answer gets written here.
 
