@@ -623,3 +623,37 @@ photos rather than the summary statistic.
 
 The 40 tags are saved as `experiments/timeline/fixtures/oakley-40-tagged.json`
 so #33 can be scored against them rather than re-tagged.
+
+## 2026-09-13 — Repositioned: curate a mostly-right pile
+
+Matt set the direction after the tally: stop worrying about camera rolls and
+full phone pulls. Assume the input is a **pet album**. Expect piles of pet
+pictures with high signal for one pet, and many photos that are a different
+pet or several at once. Explicitly *not* trying to get good at generalised
+pet detection — "more on helping people manage good sets of photos that need
+some cleanup."
+
+Recorded as D24, and it is the clearest statement of what the product is
+that the project has had. The engine was never the interesting part; the
+platforms do recognition better and nobody asked us to compete there. What
+is left is merging several people's albums of one animal, giving the result
+structure, resurfacing it, and making the cleanup cheap.
+
+**It reframes D23's 32% from a defect into the job.** Those Izzy photos in
+Oakley's album are not mistakes — the two dogs were together. A photo should
+belong to both timelines. Multi-pet is the normal case, which corrects how
+D19 and D21 were being applied.
+
+**It also dissolves two of the three biggest named risks**, rather than
+mitigating them. The vision's §7 puts camera-roll permission friction near
+the top, and it was the largest unvalidated risk in the project: an album
+export needs no runtime permission at all, because it is a file someone
+hands you. The "free up space" gap (D7) stops applying for the same reason.
+Closed #17 and #32 on that basis.
+
+One thing it opens: D7 chose Android-first because `MediaStore` plus ML Kit
+was the ingest path. If ingest is a file, the client could be anything,
+including a web app. Flagged in D24, not decided.
+
+`rawroll.py` survives its own issue being closed — it is the **review tool**
+now, and it is what #33 will use to score the cleanup loop.

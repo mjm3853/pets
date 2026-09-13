@@ -613,3 +613,55 @@ picking one.
 **What would change it:** A source that really is single-pet ground truth —
 a user tapping "this is Oakley" per photo. That is #30, and it stays the
 only `user` tier.
+
+---
+
+## D24 — The product curates a mostly-right pile; it does not find pets in chaos
+
+**Status:** locked · **Date:** 2026-09-13 · **Supersedes the ambition in:** D22 · **Refines:** D6, D17, D19, D21, D23 · **See:** issues #32, #33
+
+**Decision:** The input is **a pet album** — an export the user hands over,
+already about one pet. Camera-roll ingestion is out of scope. The product's
+job is to take a pile of photos that is already high-signal for one pet and
+make it a good, browsable, shareable set: merging several people's albums of
+the same animal, giving it structure, resurfacing it, and **making the
+cleanup cheap**. It is not a general pet-detection system and will not try
+to become one.
+
+**Why:** Matt, deciding the direction: expect "piles of pet pictures, with
+high signal that it is a specific pet, but with many examples where it is a
+different pet or multiple pets that could assign to multiple areas … I don't
+think we want to get super good at generalized pet detection. More on
+helping people manage good sets of photos that need some cleanup."
+
+The measurements support it. An album is 90%+ animal photos and roughly
+two-thirds the intended pet (D23) — high signal, imperfect. A raw camera
+roll is a different and much harder problem that nobody asked us to solve,
+and the platforms are already better at the recognition half of it (D17).
+
+**What this reframes.** The 32% of Oakley's album that is actually Izzy is
+**not an error to eliminate** — those photos genuinely contain Izzy, usually
+both dogs at once, because the two were together. The product's job is to
+let a photo belong to both timelines and to make the remainder a minute of
+clicking. **Multi-pet is the normal case, not the exception**, which is a
+correction to how D19 and D21 were being applied.
+
+**What it dissolves.** The vision's §7 names camera-roll permission friction
+as a top risk, and it was the largest unvalidated one in the project. An
+album export needs **no runtime permission at all** — it is a file. The "free
+up space" gap (D7) stops mattering for the same reason. Two of the three
+biggest named risks are gone, not mitigated.
+
+**What it opens, unresolved.** D7 chose Android-first because `MediaStore`
+plus ML Kit was the ingest path. If ingest is a file the user exports,
+that reasoning weakens and the client could be anything, including a web
+app. Not decided here; flagged.
+
+**How to apply:** Anything that improves detection on unconstrained photos
+is out of scope. Anything that makes a roughly-right set easier to correct,
+merge, structure or share is the product. When a photo plausibly contains
+two known pets, record both rather than choosing.
+
+**What would change it:** Users arriving without albums — no pet grouping on
+their platform, or unwilling to export. Then onboarding needs a different
+front door, not a different engine.

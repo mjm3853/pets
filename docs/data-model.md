@@ -291,11 +291,17 @@ then a five-year hole; year-chapters would emit six empty ones. A friend's
 pet never gets an anchor guessed for it — no owner is here to confirm one
 (D21). Sparse view, `first_seen`, `last_seen`, and that is all.
 
-**And a caveat on everything above this section.** Every input so far was
-a platform-curated pet album, not a camera roll — 51 of Ray's and 125 of
-Oakley's photos were on Matt's and Renee's phones and absent from the Izzy
-exports. The detection and contamination figures describe album input. See
-D22 and issue #32.
+**The input is an album, and that is now the design (D24).** Camera rolls
+are out of scope. An album is ~90% animal photos and roughly two-thirds the
+intended pet — high signal, imperfect. Hand-tagging 40 detections from
+Oakley's album found **20 Izzy, 20 Oakley** (D23), because people build a
+pet's album from the occasions that pet was around, and on those occasions
+both animals are in frame.
+
+So **multi-pet is the normal case, not the exception**, and the 32% is not
+an error to eliminate — those photos really do contain both. The model's job
+is to record both appearances and make the remainder cheap to correct, which
+is what `appearances[]` and the correction tray exist for.
 
 **Zero required metadata.** A pet needs a name. Species, anchor, adoption
 date, dogsitting windows are all optional and all fillable later. People do
