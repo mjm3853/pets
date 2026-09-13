@@ -587,7 +587,8 @@ def main():
     burst = next((m for m in d["milestones"] if m["kind"] == "busiest_moment"), None)
     compression = s["media_with_pet"] / max(s["moments_with_pet"], 1)
 
-    html = f"""<title>{name}, In Order</title>
+    html = f"""<meta charset="utf-8">
+<title>{name}, In Order</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -749,7 +750,7 @@ document.querySelectorAll('.hc[data-date]').forEach(btn => {{
 document.addEventListener('keydown', e => {{ if (e.key === 'Escape') closeBurst(); }});
 </script>
 """
-    args.out.write_text(html)
+    args.out.write_text(html, encoding="utf-8")
     digests.save()
     nassets, abytes = assets.finish()
     mb = len(html.encode()) / 1e6
