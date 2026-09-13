@@ -19,6 +19,11 @@ from pathlib import Path
 
 from PIL import Image, ImageOps
 
+from cache import Cache, Digests, param_key
+
+PAD = 0.34
+RECIPE = 1  # bump when crop/wide geometry changes: cached bytes key off it
+
 CSS = """
 :root {
   --paper:#F5F4F1; --raise:#FFFFFF; --ink:#17181B; --soft:#5C5E63; --faint:#8E9096;
@@ -224,8 +229,8 @@ footer { padding:34px 0 60px; color:var(--faint); font-size:13px; }
 """
 
 
-def crop(path: Path, box, px: int, quality: int, pad: float = 0.34) -> str:
-    """Square crop centred on the detected pet, encoded as a data URI."""
+def crop(path: Path, box, px: int, quality: int, pad: float = PAD) -> bytes:
+    """Square crop centred on the detected pet, encoded as JPEG."""
     img = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
     W, H = img.size
     if box:
@@ -241,10 +246,10 @@ def crop(path: Path, box, px: int, quality: int, pad: float = 0.34) -> str:
                     int(cx + side / 2), int(cy + side / 2))).resize((px, px), Image.LANCZOS)
     buf = io.BytesIO()
     out.save(buf, "JPEG", quality=quality, optimize=True, progressive=True)
-    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
+    return buf.getvalue()
 
 
-def wide(path: Path, box, px: int, quality: int) -> str:
+def wide(path: Path, box, px: int, quality: int) -> bytes:
     """4:3 hero framed around the pet but keeping the scene."""
     img = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
     W, H = img.size
@@ -259,7 +264,57 @@ def wide(path: Path, box, px: int, quality: int) -> str:
     buf = io.BytesIO()
     img.crop((left, top, left + tw, top + th)).save(
         buf, "JPEG", quality=quality, optimize=True, progressive=True)
-    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
+    return buf.getvalue()
+
+
+class Images:
+    """Encode once, deliver per mode: a data URI, or a file and a relative URL.
+
+    The cache key is the source file's content digest plus every parameter that
+    reaches the encoder, so a changed --thumb or a re-detected box misses while
+    an untouched photo hits forever.
+    """
+
+    def __init__(self, cache: Cache, digests: Digests, out: Path,
+                 external: bool, read: bool):
+        self.cache, self.digests, self.read = cache, digests, read
+        self.dir = out.with_name(out.stem + "_assets") if external else None
+        self.written = set()
+        if self.dir:
+            self.dir.mkdir(exist_ok=True)
+
+    def crop(self, path: Path, box, px: int, quality: int, pad: float = PAD) -> str:
+        key = self._key(path, "crop", box, px, quality, pad)
+        return self._ref(key, lambda: crop(path, box, px, quality, pad))
+
+    def wide(self, path: Path, box, px: int, quality: int) -> str:
+        key = self._key(path, "wide", box, px, quality)
+        return self._ref(key, lambda: wide(path, box, px, quality))
+
+    def _key(self, path: Path, kind: str, box, *params) -> str:
+        return param_key(self.digests.of(path), RECIPE, kind,
+                         json.dumps(box, separators=(",", ":")), *params)
+
+    def _ref(self, key: str, encode) -> str:
+        data = self.cache.get(key, ".jpg") if self.read else None
+        if data is None:
+            data = encode()
+            self.cache.put(key, data, ".jpg")
+        if self.dir is None:
+            return "data:image/jpeg;base64," + base64.b64encode(data).decode()
+        if key not in self.written:
+            (self.dir / f"{key}.jpg").write_bytes(data)
+            self.written.add(key)
+        return f"{self.dir.name}/{key}.jpg"
+
+    def finish(self) -> tuple[int, int]:
+        """Drop assets left over from earlier parameters, then measure."""
+        if self.dir is None:
+            return 0, 0
+        for p in self.dir.glob("*.jpg"):
+            if p.stem not in self.written:
+                p.unlink()
+        return len(self.written), sum(p.stat().st_size for p in self.dir.glob("*.jpg"))
 
 
 def pretty(d: str) -> str:
@@ -308,7 +363,16 @@ def main():
     ap.add_argument("--frame-quality", type=int, default=64)
     ap.add_argument("--max-frames", type=int, default=9,
                     help="burst frames encoded per moment")
+    ap.add_argument("--assets", choices=("external", "inline"), default="external",
+                    help="external: sibling <out>_assets/ folder; inline: base64 in the page")
+    ap.add_argument("--cache", type=Path, default=Path(__file__).resolve().parent / ".cache")
+    ap.add_argument("--no-cache", action="store_true",
+                    help="re-encode everything; still writes the cache")
     args = ap.parse_args()
+
+    digests = Digests(args.cache)
+    assets = Images(Cache(args.cache, "crops"), digests, args.out,
+                    args.assets == "external", not args.no_cache)
 
     d = json.loads(args.data.read_text())
     name = d["pet"]["name"]
@@ -323,7 +387,7 @@ def main():
         if i % 100 == 0:
             print(f"  {i}/{len(moments)}")
         try:
-            thumbs[m["id"]] = crop(files[m["id"]], m["hero_box"], args.thumb, args.quality)
+            thumbs[m["id"]] = assets.crop(files[m["id"]], m["hero_box"], args.thumb, args.quality)
         except Exception as e:
             print(f"  skip {m['hero']}: {e}")
 
@@ -380,7 +444,7 @@ def main():
             print(f"  {i}/{len(todo)}")
         row = by_name.get(fname, {})
         try:
-            src = crop(Path(row["path"]), row.get("box"), args.frame, args.frame_quality)
+            src = assets.crop(Path(row["path"]), row.get("box"), args.frame, args.frame_quality)
         except Exception:
             continue
         off = int((datetime.fromisoformat(row["taken_at"])
@@ -407,8 +471,8 @@ def main():
     chapters = []
     for e in d["eras"]:
         hero_m = next((m for m in moments if m["hero"] == e["hero"]), None)
-        hero = wide(Path(hero_m["hero_path"]) if hero_m else files[moments[0]["id"]],
-                    hero_m["hero_box"] if hero_m else None, 1300, 80)
+        hero = assets.wide(Path(hero_m["hero_path"]) if hero_m else files[moments[0]["id"]],
+                           hero_m["hero_box"] if hero_m else None, 1300, 80)
         inside = [m for m in moments if e["start"] <= m["date"] <= e["end"]]
 
         # day heatmap, one column per week, Sunday at the top
@@ -686,12 +750,17 @@ document.addEventListener('keydown', e => {{ if (e.key === 'Escape') closeBurst(
 </script>
 """
     args.out.write_text(html)
+    digests.save()
+    nassets, abytes = assets.finish()
     mb = len(html.encode()) / 1e6
     nframes = sum(len(v) for v in bursts.values())
     print(f"\nWrote {args.out} — {mb:.1f} MB")
     print(f"  {len(thumbs)} moment thumbnails, {nframes} burst frames, {len(chapters)} chapters")
-    if mb > 26:
+    if assets.dir:
+        print(f"  {nassets} assets in {assets.dir.name}/ — {abytes / 1e6:.1f} MB on disk")
+    elif mb > 26:
         print("WARNING: very large for a single file; lower --frame or --thumb")
+    print(f"  cache {assets.cache.rate}")
 
 
 if __name__ == "__main__":

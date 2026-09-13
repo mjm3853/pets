@@ -5,3 +5,5 @@ __pycache__/
 *.json
 !pyproject.toml
 *.html
+*_assets/
+.cache/

@@ -25,28 +25,50 @@ photo with a `.json` sidecar containing `photoTakenTime`.
 ## Run
 
 ```bash
-uv run ingest.py "/path/to/photos" --pet Izzy
-uv run render.py --photos "/path/to/photos" --out izzy.html
+uv run ingest.py --pet Izzy --roll "Matt=/path/to/matt" --roll "Renee=/path/to/renee"
+uv run render.py --out izzy.html
 ```
 
+One `--roll` per contributor. Paths travel in `moments.json`, so `render.py`
+needs no photo path of its own.
+
 `ingest.py` writes `moments.json` (media, moments, eras, milestones).
-`render.py` embeds every thumbnail as a data URI, so the HTML is one
-portable file with no image directory — about 7.7 MB for 549 moments.
-Lower `--thumb` or `--quality` if it grows past ~15 MB.
+`render.py` writes the page plus a sibling `<name>_assets/` folder of
+JPEGs. Pass `--assets inline` for a single portable file with every image
+base64'd in — bigger and slower to open, but one file you can send someone.
+
+Both scripts cache on content hash (`.cache/`, gitignored), so re-running
+after a change costs only what actually changed:
+
+| | cold | warm |
+|---|---|---|
+| `ingest.py`, 4,383 files | 6m25s | **4.8s** |
+| `render.py`, 1,378 moments | 3m11s | **0.8s** |
+
+Output is byte-identical either way. `--no-cache` forces recompute,
+`--rebuild moments.json` recomputes everything downstream of detection
+without touching the model.
 
 ## Results on the Izzy archive
 
+Two rolls, Matt's and Renee's:
+
 | | |
 |---|---|
-| Files in | 1,274 |
-| Contained a detectable dog | 1,144 (90%) |
-| Moments after burst clustering | 549 (2.1× compression) |
-| Chapters | 6 life years, anchored on the first photo |
-| Undated files held out | 32 |
+| Files in | 4,403 (20 shared copies kept once) |
+| Contained a detectable dog | 3,924 (90%) |
+| Moments after burst clustering | 1,378 (2.8× compression) |
+| Chapters | 6 life years, anchored on first sustained photography |
+| Built from both rolls at once | 81 moments |
+| Held out | 163 undated, 2 pre-anchor (another dog) |
 
-Detection alone was sufficient — no individual pet ID — which answers §9's
-first question for a single-pet household. The archive is single-contributor
-(device succession, not three people), so it does **not** test D6.
+**Day coverage: Matt 484, Renee 490, merged 772** — the merge adds 58% more
+days than the better single roll. That is the D6 wedge, measured.
+
+Detection alone is sufficient for the timeline; no individual pet ID. But
+Renee's roll contains two photos of other people's dogs from 2018–19, and
+before D15 those 0.05% dragged the anchor back 2.5 years and destroyed the
+chapter structure.
 
 ## Notes
 
