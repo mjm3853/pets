@@ -18,11 +18,34 @@ Work lives in [GitHub issues](https://github.com/mjm3853/pets/issues), labelled
 risks, which outrank everything else — two of the three findings so far were
 bugs that produced plausible wrong output rather than errors.
 
-## Experiments
+## Running it
 
-[`experiments/timeline/`](experiments/timeline/) ingests a folder of photos into a moment graph and renders it as a self-contained page. Run against 1,982 files covering one dog over five and a half years, it found the pet in 90% of files and collapsed them into 723 moments across six auto-derived chapters.
+Everything lives in [`experiments/timeline/`](experiments/timeline/) — see its
+[README](experiments/timeline/README.md) for the full guide. The short version,
+with [`uv`](https://docs.astral.sh/uv/) installed:
 
-Experiments are throwaway scripts, each its own `uv` project. Photos and generated output are never committed.
+```bash
+cd experiments/timeline
+uv run ingest.py --pet Izzy --species dog --anchor 2021-04-09 --roll "Matt=/path/to/photos"
+uv run render.py --out izzy.html
+open izzy.html
+```
+
+No server, no database, no build step. Run against 4,403 files from two
+people's camera rolls, it finds an animal in 90% of them and collapses them
+into 1,378 moments across a prologue and six life-year chapters.
+
+Experiments are throwaway scripts, each its own `uv` project. Photos and
+generated output are never committed.
+
+## Sharing it
+
+The output is a 1 MB page plus a 22 MB folder of JPEGs, so hosting is
+technically trivial — any static host serves it unchanged. The real constraint
+is that it is a private photo archive and static hosting is unauthenticated by
+default; an unguessable URL is not access control. For now it stays local:
+send the single-file build, or serve it over Tailscale. Anything wider needs
+real auth, which is a product decision rather than a hosting one.
 
 ## Where this stands
 
