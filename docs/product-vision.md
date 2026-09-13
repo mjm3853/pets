@@ -21,6 +21,7 @@ That gap is real. It is the foundation of the product.
 The obvious version of this product — "a great place to curate your pet's memories" — fails on first principles:
 
 - **The effort/payoff asymmetry runs backwards.** Cost is paid daily at capture; value is realized years later at retrieval. This kills nearly every journaling product ever built.
+  - *Qualified 2026-09-13 by [D26](decisions.md).* True of **capture**. Not a general law: sorting photos of your own pet turned out to be enjoyable, because the question shows you the photo and the payoff lands in the same instant as the work. Effort of that shape is retention, not cost.
 - **The real competitor is the camera roll, not Instagram or Google Photos** — and it wins on the only axis that matters at scale: zero effort.
 - **Curation is a stated preference, not a revealed one.** Everyone says they want organized photos; almost nobody organizes them. The photo products that won did so by *removing* curation (auto-grouping, auto-Memories), not by offering better curation tools.
 

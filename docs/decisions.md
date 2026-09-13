@@ -714,3 +714,45 @@ of photos from one fortnight on one old phone is usually one answer.
 
 **What would change it:** Nothing available without recognition, which D17
 declines and D24 puts out of scope.
+
+---
+
+## D26 — Cleanup is a consumption surface, not a tax
+
+**Status:** locked · **Date:** 2026-09-13 · **Qualifies:** the effort/payoff argument in vision §2 · **See:** issues #16, #35
+
+**Decision:** The correction loop is treated as **a reason to open the app**,
+not as friction to be minimised toward zero. Design questions whose answer
+is *looking at a photo you would enjoy looking at anyway*. Effort spent that
+way is retention, not cost.
+
+**Why:** Matt, after answering 28 queue items in one sitting: *"it felt like
+sorting photos, not a chore. Pretty fun actually."*
+
+The vision's §2 treats user effort as the thing that kills journaling
+products — cost paid at capture, value realised years later — and the whole
+capture-inversion thesis follows from minimising it. That argument is right
+about *capture* and wrong as a general law. Sorting photos of your own dog
+is not capture; it is **retrieval with a decision attached**, and the photo
+is the payoff, delivered in the same instant as the work.
+
+The distinguishing property is worth stating precisely, because it is what
+makes this generalisable and not just a nice anecdote: **the question puts
+something you want to see in front of you, and answering it takes one
+glance.** Tagging from a filename is a chore. Choosing between two dogs you
+love while looking at them is a scroll through an album with a purpose.
+
+**How to apply.** Prefer question-shaped surfaces wherever a fact is
+genuinely uncertain: which pet, which of these is the better hero for this
+chapter, is this the right gotcha day, where is this place. Batch them, make
+every answer one click, and never ask anything that does not show a photo.
+Never manufacture questions to create engagement — the honesty of the
+uncertainty is what keeps this from being a dark pattern.
+
+**Caveat, recorded deliberately:** this is one session, one person, and that
+person built the thing. It should be checked against a friend who has no
+investment in it (#29) before it carries much weight. It is promising, not
+proven.
+
+**What would change it:** A friend finding the same loop tedious, or the
+queue staying enjoyable only while it is novel.

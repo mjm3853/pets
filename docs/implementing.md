@@ -108,6 +108,12 @@ real bug.
 
 ## How to think about it
 
+**Effort is not automatically bad.** D26: the correction loop turned out to
+be fun, because every question shows a photo and takes one glance to answer.
+Before optimising a human step away, ask whether it is actually a *chore* or
+whether it is retrieval with a decision attached. Never ask a question
+without showing a photo, and never invent one to drive engagement.
+
 **Cheapest thing that answers the question.** Most issues here are really
 questions about the product wearing a feature's clothes. Before building the
 full version, ask what the smallest thing is that would tell you whether the

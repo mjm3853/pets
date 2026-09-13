@@ -820,3 +820,34 @@ moments, Ray 49 → 29, multi-pet moments 24 → 58.
 Nothing about this is a failure of the product. It is the product: D24 says
 the job is curating a mostly-right pile, and this is what "mostly right"
 actually looks like when the pile is about a friend's dog.
+
+## 2026-09-13 — The cleanup was fun, which changes the argument
+
+Asked Matt whether 28 corrections felt like a chore. *"It felt like sorting
+photos, not a chore. Pretty fun actually, similar mechanisms will help this
+thing become real and useful."*
+
+That qualifies the vision's opening argument. §2 treats user effort as the
+thing that kills journaling products — cost at capture, value years later —
+and the whole capture-inversion thesis follows from driving effort to zero.
+Right about capture. Not a general law.
+
+Sorting photos of your own dog is **retrieval with a decision attached**.
+The photo is the payoff and it arrives in the same instant as the work. The
+distinguishing property, stated precisely so it generalises: *the question
+puts something you want to see in front of you, and answering takes one
+glance.* Tagging from a filename is a chore; choosing between two dogs you
+love while looking at them is an album scroll with a purpose.
+
+Recorded as D26, and the vision doc now carries the qualification inline
+rather than quietly contradicting itself. #35 files the other places the
+same shape fits: which hero for this chapter, is this the gotcha day, where
+is this place, which moments belong in the recap. Each is a real uncertainty
+already sitting in the data.
+
+One rule written into D26 and #35 because it would be easy to get wrong:
+**never manufacture a question to create engagement.** The honesty of the
+uncertainty is what makes this pleasant rather than manipulative.
+
+Caveat recorded in the decision itself: one session, one person, and that
+person built it. #29 — a friend with no investment — is the real test.
