@@ -181,6 +181,36 @@ h2 { font-size:clamp(26px,3.4vw,38px); }
   color:var(--faint); margin-top:5px; }
 .frames .hero figcaption { color:var(--accent); }
 
+/* nav */
+.nav { position:sticky; top:0; z-index:30; background:var(--paper);
+  border-bottom:1px solid var(--rule); }
+.nav .wrap { display:flex; align-items:center; gap:6px; padding-top:11px;
+  padding-bottom:11px; flex-wrap:wrap; }
+.nav a { font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--soft);
+  text-decoration:none; border:1px solid transparent; border-radius:999px;
+  padding:5px 12px; }
+.nav a:hover { color:var(--ink); border-color:var(--rule); }
+.nav a[aria-current="page"] { color:var(--paper); background:var(--ink);
+  border-color:var(--ink); }
+.nav .sep { flex:1 1 auto; }
+.nav .count { font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--faint); }
+
+/* index */
+.cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:20px; margin-top:34px; }
+.card { display:block; text-decoration:none; color:inherit; background:var(--raise);
+  border:1px solid var(--rule); border-radius:6px; overflow:hidden; }
+.card:hover { border-color:var(--soft); }
+.card img { width:100%; aspect-ratio:4/3; object-fit:cover; display:block;
+  background:var(--rule); }
+.card .body { padding:15px 17px 17px; }
+.card h3 { font-size:25px; }
+.card .meta { font-family:"IBM Plex Mono",monospace; font-size:11.5px;
+  color:var(--faint); margin-top:7px; line-height:1.7; }
+.card .tag { display:inline-block; font-family:"IBM Plex Mono",monospace;
+  font-size:10px; letter-spacing:.08em; text-transform:uppercase; padding:2px 7px;
+  border-radius:3px; border:1px solid var(--rule); color:var(--soft); margin-top:9px; }
+
 /* reassign */
 .who-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap;
   margin-top:14px; padding-top:13px; border-top:1px solid var(--rule); }
@@ -357,6 +387,173 @@ def tip(ms: dict) -> str:
     return f' title="{why}"'
 
 
+def burst_script(detail: dict, pets: list[dict]) -> str:
+    """Expansion panel plus the pet picker, shared by every page."""
+    return f"""<div class="tray" id="tray" hidden>
+  <h4>Corrections</h4>
+  <div><span class="n"></span> &mdash; paste into <code>pet.json</code>, then re-run
+  <code>ingest.py --rebuild moments.json</code>.</div>
+  <textarea readonly></textarea>
+  <div class="acts">
+    <button class="pick" type="button" id="tray-copy">Copy</button>
+    <button class="pick" type="button" id="tray-clear">Clear</button>
+  </div>
+</div>
+
+<script>
+const M = {json.dumps(detail, separators=(',', ':'))};
+const PETS = {json.dumps([{"id": p["id"], "name": p["name"]} for p in pets], separators=(',', ':'))};
+let CHOSEN = {{}};
+try {{ CHOSEN = JSON.parse(localStorage.getItem('assign') || '{{}}'); }} catch (e) {{}}
+const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+
+function dur(s) {{
+  if (s < 60) return plural(s, 'second');
+  const m = Math.round(s / 60);
+  return m < 60 ? plural(m, 'minute') : plural(Math.round(m / 60), 'hour');
+}}
+
+function closeBurst() {{
+  document.querySelectorAll('.det').forEach(d => d.remove());
+  document.querySelectorAll('.sheet figure.open').forEach(f => f.classList.remove('open'));
+}}
+
+function openBurst(fig) {{
+  const was = fig.classList.contains('open');
+  closeBurst();
+  if (was) return;
+  const d = M[fig.dataset.m];
+  if (!d) return;
+  fig.classList.add('open');
+
+  const multi = (d.who || []).length > 1;
+  const frames = d.f.map(f => ({{ src: f.s, t: f.t, w: f.w, hero: false }}));
+  frames.push({{ src: fig.querySelector('img').src, t: d.ht, w: d.hw, hero: true }});
+  frames.sort((a, b) => a.t - b.t);
+
+  const strip = frames.map(f => {{
+    const off = f.t === 0 ? 'start' : '+' + dur(f.t);
+    const by = f.w && multi ? '<br>' + f.w : '';
+    return '<figure class="' + (f.hero ? 'hero' : '') + '">'
+      + '<img src="' + f.src + '" alt="" loading="lazy">'
+      + '<figcaption>' + off + (f.hero ? ' &middot; pick' : '') + by + '</figcaption></figure>';
+  }}).join('');
+
+  const bits = [plural(d.n, 'frame')];
+  if (d.n > 1 && d.sp > 0) bits.push('over ' + dur(d.sp));
+  if (d.p) bits.push('with a person in frame');
+  if (multi) bits.push('shot by ' + d.who.join(' and '));
+  if (d.trunc) bits.push('showing first ' + (d.f.length + 1) + ' of ' + d.n);
+  if (d.dev) bits.push(d.dev);
+
+  const el = document.createElement('div');
+  el.className = 'det';
+  el.innerHTML = '<div class="dethead"><div><h4>' + d.d + '</h4>'
+    + '<p class="detsub">' + d.c + ' &middot; <b>' + bits[0] + '</b>'
+    + (bits.length > 1 ? ' &middot; ' + bits.slice(1).join(' &middot; ') : '') + '</p></div>'
+    + '<button class="detclose" type="button">Close</button></div>'
+    + '<div class="frames">' + strip + '</div>';
+  const chosen = CHOSEN[fig.dataset.m] || d.pets || [];
+  const picks = PETS.map((p, i) =>
+    '<button class="pick" type="button" data-pet="' + p.id + '" aria-pressed="'
+    + chosen.includes(p.id) + '">' + p.name + '<kbd>' + (i + 1) + '</kbd></button>').join('');
+  el.querySelector('.frames').insertAdjacentHTML('afterend',
+    '<div class="who-row"><span class="lab">This is</span>' + picks
+    + '<button class="pick" type="button" data-pet="" aria-pressed="'
+    + (chosen.length === 0) + '">Not sure<kbd>0</kbd></button></div>');
+  el.querySelectorAll('.who-row .pick').forEach(b =>
+    b.addEventListener('click', () => choose(fig, b.dataset.pet)));
+  el.querySelector('.detclose').addEventListener('click', closeBurst);
+  fig.after(el);
+  el.scrollIntoView({{ block: 'nearest', behavior: 'smooth' }});
+}}
+
+document.querySelectorAll('.sheet').forEach(sheet => {{
+  sheet.addEventListener('click', e => {{
+    const fig = e.target.closest('.sheet > figure');
+    if (fig) openBurst(fig);
+  }});
+  sheet.addEventListener('keydown', e => {{
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const fig = e.target.closest('.sheet > figure');
+    if (fig) {{ e.preventDefault(); openBurst(fig); }}
+  }});
+}});
+
+document.querySelectorAll('.hc[data-date]').forEach(btn => {{
+  btn.addEventListener('click', () => {{
+    const hit = document.querySelector('.sheet figure[data-date="' + btn.dataset.date + '"]');
+    if (!hit) return;
+    hit.scrollIntoView({{ block: 'center', behavior: 'smooth' }});
+    hit.classList.remove('flash');
+    void hit.offsetWidth;
+    hit.classList.add('flash');
+  }});
+}});
+
+function choose(fig, pet) {{
+  const id = fig.dataset.m;
+  const cur = new Set(CHOSEN[id] || M[id].pets || []);
+  if (!pet) cur.clear();
+  else if (cur.has(pet)) cur.delete(pet);
+  else cur.add(pet);
+  CHOSEN[id] = [...cur];
+  try {{ localStorage.setItem('assign', JSON.stringify(CHOSEN)); }} catch (e) {{}}
+  const open = document.querySelector('.det');
+  if (open) open.querySelectorAll('.who-row .pick').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.pet
+      ? cur.has(b.dataset.pet) : cur.size === 0));
+  tray();
+}}
+
+function tray() {{
+  const box = document.getElementById('tray');
+  const n = Object.keys(CHOSEN).length;
+  box.hidden = !n;
+  if (!n) return;
+  box.querySelector('.n').textContent = n + (n === 1 ? ' change' : ' changes');
+  box.querySelector('textarea').value = JSON.stringify({{assignments: CHOSEN}}, null, 1);
+}}
+
+document.addEventListener('keydown', e => {{
+  if (e.key === 'Escape') return closeBurst();
+  const fig = document.querySelector('.sheet figure.open');
+  if (!fig || !/^[0-9]$/.test(e.key)) return;
+  const i = Number(e.key);
+  if (i === 0) return choose(fig, '');
+  if (PETS[i - 1]) choose(fig, PETS[i - 1].id);
+}});
+
+document.getElementById('tray-copy').addEventListener('click', async () => {{
+  const ta = document.querySelector('#tray textarea');
+  ta.select();
+  try {{ await navigator.clipboard.writeText(ta.value); }} catch (e) {{ document.execCommand('copy'); }}
+  document.getElementById('tray-copy').textContent = 'Copied';
+}});
+document.getElementById('tray-clear').addEventListener('click', () => {{
+  CHOSEN = {{}};
+  try {{ localStorage.removeItem('assign'); }} catch (e) {{}}
+  closeBurst();
+  tray();
+}});
+tray();
+</script>
+"""
+
+
+def nav(pets: list[dict], here: str | None) -> str:
+    """Same bar on every page, so a shared file is an app rather than a file."""
+    def link(href, label, current):
+        mark = ' aria-current="page"' if current else ""
+        return f'<a href="{href}"{mark}>{label}</a>'
+    bits = [link("index.html", "All pets", here is None)]
+    bits += [link(f'{p["id"]}.html', p["name"], p["id"] == here) for p in pets]
+    bits.append('<span class="sep"></span>')
+    bits.append(link("index.html#together", "Together", False))
+    bits.append(link("index.html#review", "Needs review", False))
+    return f'<div class="nav"><div class="wrap">{"".join(bits)}</div></div>'
+
+
 def chapter_split(inside: list[dict], order: list[str]) -> str:
     """Per-chapter moment counts by whose roll they came from."""
     if len(order) < 2:
@@ -388,11 +585,75 @@ def cell(m: dict, src: str, name: str, order: list[str]) -> str:
             f'{badge}<i class="who {stripe}"></i></figure>')
 
 
+def render_all(args) -> None:
+    """Every pet page plus the index, sharing one asset folder and one cache."""
+    import subprocess
+    import sys
+
+    import index_page
+
+    d = json.loads(args.data.read_text())
+    pets = d["pets"]
+    out_dir = args.out.parent
+    keep = ["--data", str(args.data), "--assets", args.assets,
+            "--cache", str(args.cache), "--thumb", str(args.thumb),
+            "--quality", str(args.quality), "--frame", str(args.frame),
+            "--frame-quality", str(args.frame_quality),
+            "--max-frames", str(args.max_frames)]
+    for p in pets:
+        page = out_dir / f"{p['id']}.html"
+        print(f"--- {p['name']}")
+        subprocess.run([sys.executable, __file__, "--pet", p["id"],
+                        "--out", str(page), *keep], check=True)
+
+    # The index reuses the per-pet crops: same content, same parameters, so the
+    # cache serves every one of them and this pass costs nothing.
+    digests = Digests(args.cache)
+    assets = Images(Cache(args.cache, "crops"), digests, out_dir / "index.html",
+                    args.assets == "external", True)
+    moments = [m for m in d["moments"] if m["appearances"] and m["dated"]]
+    by_file = {x["file"]: x for x in d["media"]}
+    thumbs, heroes = {}, {}
+    want = {m["id"] for m in moments
+            if len(m["appearances"]) > 1 or m.get("needs_review")}
+    for m in moments:
+        if m["id"] in want:
+            thumbs[m["id"]] = assets.crop(Path(m["hero_path"]), m["hero_box"],
+                                          args.thumb, args.quality)
+    for p in pets:
+        mine = [m for m in moments
+                if any(a["pet"] == p["id"] for a in m["appearances"])
+                and not m.get("before_anchor")]
+        if mine:
+            hero = max(mine, key=lambda m: m["hero_quality"])
+            heroes[p["id"]] = assets.wide(Path(hero["hero_path"]), hero["hero_box"], 900, 78)
+    digests.save()
+    order = list(d["source"]["rolls"])
+    # No burst frames on the index: reviewing "which animal is this" needs the
+    # hero, not the whole run, and encoding 100+ extra bursts would double it.
+    detail = {m["id"]: {
+        "d": datetime.fromisoformat(m["started_at"]).strftime("%A, %B %-d, %Y"),
+        "c": datetime.fromisoformat(m["started_at"]).strftime("%-I:%M %p").lower(),
+        "n": m["media_count"], "sp": m["span_seconds"], "p": m["with_people"],
+        "dev": m["device"] or "", "ht": 0, "f": [],
+        "hw": m.get("hero_by", ""), "who": m.get("contributors", []),
+        "pets": [a["pet"] for a in m["appearances"]], "trunc": 0,
+    } for m in moments if m["id"] in thumbs}
+    html = index_page.build(d, pets, thumbs, heroes, order, detail)
+    (out_dir / "index.html").write_text(html, encoding="utf-8")
+    n, b = assets.finish()
+    print(f"\nWrote {out_dir / 'index.html'} — {len(pets)} pets, "
+          f"{sum(1 for m in moments if len(m['appearances']) > 1)} together, "
+          f"{sum(1 for m in moments if m.get('needs_review'))} to review")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", type=Path, default=Path("moments.json"))
     ap.add_argument("--pet", help="which pet to render; default is the first "
                                   "with a timeline")
+    ap.add_argument("--all", action="store_true",
+                    help="render every pet plus index.html and re-exec per pet")
     ap.add_argument("--photos", type=Path, help="unused; paths travel in the data")
     ap.add_argument("--out", type=Path, default=Path("timeline.html"))
     ap.add_argument("--thumb", type=int, default=200)
@@ -411,6 +672,9 @@ def main():
     digests = Digests(args.cache)
     assets = Images(Cache(args.cache, "crops"), digests, args.out,
                     args.assets == "external", not args.no_cache)
+
+    if args.all:
+        return render_all(args)
 
     d = json.loads(args.data.read_text())
     pets = d["pets"]
@@ -708,6 +972,8 @@ def main():
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>{CSS}</style>
 
+{nav(pets, pid) if len(pets) > 1 else ""}
+
 <header><div class="wrap">
   <p class="eyebrow">{"Someone else's dog, in our photos" if sparse else "An archive nobody assembled"}</p>
   <h1>{name}</h1>
@@ -760,155 +1026,7 @@ def main():
   Cell size is burst length &mdash; how many frames were taken before moving on.
 </div></footer>
 
-<div class="tray" id="tray" hidden>
-  <h4>Corrections</h4>
-  <div><span class="n"></span> &mdash; paste into <code>pet.json</code>, then re-run
-  <code>ingest.py --rebuild moments.json</code>.</div>
-  <textarea readonly></textarea>
-  <div class="acts">
-    <button class="pick" type="button" id="tray-copy">Copy</button>
-    <button class="pick" type="button" id="tray-clear">Clear</button>
-  </div>
-</div>
-
-<script>
-const M = {json.dumps(detail, separators=(',', ':'))};
-const PETS = {json.dumps([{"id": p["id"], "name": p["name"]} for p in pets], separators=(',', ':'))};
-let CHOSEN = {{}};
-try {{ CHOSEN = JSON.parse(localStorage.getItem('assign') || '{{}}'); }} catch (e) {{}}
-const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
-
-function dur(s) {{
-  if (s < 60) return plural(s, 'second');
-  const m = Math.round(s / 60);
-  return m < 60 ? plural(m, 'minute') : plural(Math.round(m / 60), 'hour');
-}}
-
-function closeBurst() {{
-  document.querySelectorAll('.det').forEach(d => d.remove());
-  document.querySelectorAll('.sheet figure.open').forEach(f => f.classList.remove('open'));
-}}
-
-function openBurst(fig) {{
-  const was = fig.classList.contains('open');
-  closeBurst();
-  if (was) return;
-  const d = M[fig.dataset.m];
-  if (!d) return;
-  fig.classList.add('open');
-
-  const multi = (d.who || []).length > 1;
-  const frames = d.f.map(f => ({{ src: f.s, t: f.t, w: f.w, hero: false }}));
-  frames.push({{ src: fig.querySelector('img').src, t: d.ht, w: d.hw, hero: true }});
-  frames.sort((a, b) => a.t - b.t);
-
-  const strip = frames.map(f => {{
-    const off = f.t === 0 ? 'start' : '+' + dur(f.t);
-    const by = f.w && multi ? '<br>' + f.w : '';
-    return '<figure class="' + (f.hero ? 'hero' : '') + '">'
-      + '<img src="' + f.src + '" alt="" loading="lazy">'
-      + '<figcaption>' + off + (f.hero ? ' &middot; pick' : '') + by + '</figcaption></figure>';
-  }}).join('');
-
-  const bits = [plural(d.n, 'frame')];
-  if (d.n > 1 && d.sp > 0) bits.push('over ' + dur(d.sp));
-  if (d.p) bits.push('with a person in frame');
-  if (multi) bits.push('shot by ' + d.who.join(' and '));
-  if (d.trunc) bits.push('showing first ' + (d.f.length + 1) + ' of ' + d.n);
-  if (d.dev) bits.push(d.dev);
-
-  const el = document.createElement('div');
-  el.className = 'det';
-  el.innerHTML = '<div class="dethead"><div><h4>' + d.d + '</h4>'
-    + '<p class="detsub">' + d.c + ' &middot; <b>' + bits[0] + '</b>'
-    + (bits.length > 1 ? ' &middot; ' + bits.slice(1).join(' &middot; ') : '') + '</p></div>'
-    + '<button class="detclose" type="button">Close</button></div>'
-    + '<div class="frames">' + strip + '</div>';
-  const chosen = CHOSEN[fig.dataset.m] || d.pets || [];
-  const picks = PETS.map((p, i) =>
-    '<button class="pick" type="button" data-pet="' + p.id + '" aria-pressed="'
-    + chosen.includes(p.id) + '">' + p.name + '<kbd>' + (i + 1) + '</kbd></button>').join('');
-  el.querySelector('.frames').insertAdjacentHTML('afterend',
-    '<div class="who-row"><span class="lab">This is</span>' + picks
-    + '<button class="pick" type="button" data-pet="" aria-pressed="'
-    + (chosen.length === 0) + '">Not sure<kbd>0</kbd></button></div>');
-  el.querySelectorAll('.who-row .pick').forEach(b =>
-    b.addEventListener('click', () => choose(fig, b.dataset.pet)));
-  el.querySelector('.detclose').addEventListener('click', closeBurst);
-  fig.after(el);
-  el.scrollIntoView({{ block: 'nearest', behavior: 'smooth' }});
-}}
-
-document.querySelectorAll('.sheet').forEach(sheet => {{
-  sheet.addEventListener('click', e => {{
-    const fig = e.target.closest('.sheet > figure');
-    if (fig) openBurst(fig);
-  }});
-  sheet.addEventListener('keydown', e => {{
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    const fig = e.target.closest('.sheet > figure');
-    if (fig) {{ e.preventDefault(); openBurst(fig); }}
-  }});
-}});
-
-document.querySelectorAll('.hc[data-date]').forEach(btn => {{
-  btn.addEventListener('click', () => {{
-    const hit = document.querySelector('.sheet figure[data-date="' + btn.dataset.date + '"]');
-    if (!hit) return;
-    hit.scrollIntoView({{ block: 'center', behavior: 'smooth' }});
-    hit.classList.remove('flash');
-    void hit.offsetWidth;
-    hit.classList.add('flash');
-  }});
-}});
-
-function choose(fig, pet) {{
-  const id = fig.dataset.m;
-  const cur = new Set(CHOSEN[id] || M[id].pets || []);
-  if (!pet) cur.clear();
-  else if (cur.has(pet)) cur.delete(pet);
-  else cur.add(pet);
-  CHOSEN[id] = [...cur];
-  try {{ localStorage.setItem('assign', JSON.stringify(CHOSEN)); }} catch (e) {{}}
-  const open = document.querySelector('.det');
-  if (open) open.querySelectorAll('.who-row .pick').forEach(b =>
-    b.setAttribute('aria-pressed', b.dataset.pet
-      ? cur.has(b.dataset.pet) : cur.size === 0));
-  tray();
-}}
-
-function tray() {{
-  const box = document.getElementById('tray');
-  const n = Object.keys(CHOSEN).length;
-  box.hidden = !n;
-  if (!n) return;
-  box.querySelector('.n').textContent = n + (n === 1 ? ' change' : ' changes');
-  box.querySelector('textarea').value = JSON.stringify({{assignments: CHOSEN}}, null, 1);
-}}
-
-document.addEventListener('keydown', e => {{
-  if (e.key === 'Escape') return closeBurst();
-  const fig = document.querySelector('.sheet figure.open');
-  if (!fig || !/^[0-9]$/.test(e.key)) return;
-  const i = Number(e.key);
-  if (i === 0) return choose(fig, '');
-  if (PETS[i - 1]) choose(fig, PETS[i - 1].id);
-}});
-
-document.getElementById('tray-copy').addEventListener('click', async () => {{
-  const ta = document.querySelector('#tray textarea');
-  ta.select();
-  try {{ await navigator.clipboard.writeText(ta.value); }} catch (e) {{ document.execCommand('copy'); }}
-  document.getElementById('tray-copy').textContent = 'Copied';
-}});
-document.getElementById('tray-clear').addEventListener('click', () => {{
-  CHOSEN = {{}};
-  try {{ localStorage.removeItem('assign'); }} catch (e) {{}}
-  closeBurst();
-  tray();
-}});
-tray();
-</script>
+{burst_script(detail, pets)}
 """
     args.out.write_text(html, encoding="utf-8")
     digests.save()

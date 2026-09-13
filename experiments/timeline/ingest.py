@@ -303,10 +303,16 @@ def caretaking(profile: dict, person: str, when: str) -> list[str]:
 def assign_appearances(moments: list[dict], media: list[dict], profile: dict) -> None:
     """Decide which pets are in each moment, guessing as rarely as possible.
 
-    Order: a person's explicit assignment, then a dated caretaker window, then
-    a contributor's single owned pet. A contributor who owns two pets gets no
-    inference at all — ambiguity resolves to unassigned, which is visible and
-    fixable, where a wrong assignment is silent (D21).
+    Order: user > album > caretaker > inferred. An album is a strong hint, not
+    proof — a hand-tagged sample of one found it 32% wrong, because people
+    build a pet's album out of the occasions that pet was around and both
+    animals are in frame (D23). So an album file also picks up its
+    contributor's own pet, and a moment resting on an album alone is flagged
+    for review rather than trusted (D24).
+
+    A contributor who owns two pets gets no inference at all: ambiguity
+    resolves to unassigned, which is visible and fixable, where a wrong
+    assignment is silent (D21).
     """
     by_file = {x["file"]: x for x in media}
     owns = owned_by(profile)
@@ -324,9 +330,7 @@ def assign_appearances(moments: list[dict], media: list[dict], profile: dict) ->
                 if not row.get("pet"):
                     continue
                 for name in row.get("assign", []):
-                    found.setdefault(slug(name), "user")
-                if row.get("assign"):
-                    continue
+                    found.setdefault(slug(name), "album")
                 care = caretaking(profile, slug(row["contributor"]), m["date"])
                 if len(care) == 1:
                     found.setdefault(care[0], "caretaker")
@@ -337,6 +341,10 @@ def assign_appearances(moments: list[dict], media: list[dict], profile: dict) ->
         m["appearances"] = [{"pet": k, "assigned_by": v}
                             for k, v in sorted(found.items()) if k in known]
         m["unassigned"] = m["has_pet"] and not m["appearances"]
+        # Nothing but an album vouches for this one, and an album is 32%
+        # wrong. Not an error — a question for the person who was there.
+        m["needs_review"] = bool(m["appearances"]) and all(
+            a["assigned_by"] == "album" for a in m["appearances"])
 
 
 def find_anchor(pet: list[dict], min_run: int = 5, window: int = 30) -> datetime:
@@ -672,7 +680,10 @@ def main():
                   "before_anchor_moments": len(strays),
                   "before_anchor_media": sum(m["media_count"] for m in strays),
                   "unassigned_moments": len(unassigned),
-                  "unassigned_media": sum(m["media_count"] for m in unassigned)},
+                  "unassigned_media": sum(m["media_count"] for m in unassigned),
+                  "needs_review_moments": sum(1 for m in moments if m["needs_review"]),
+                  "assigned_by": dict(Counter(
+                      a["assigned_by"] for m in moments for a in m["appearances"]))},
         "moments": moments, "media": media,
     }
     before = None
@@ -701,6 +712,10 @@ def main():
             print(f"             {p['before_anchor_moments']} before the anchor, held out")
     both = [m for m in moments if len(m["appearances"]) > 1]
     print(f"  moments with more than one pet: {len(both)}")
+    print(f"  assignment source: {s['assigned_by']}")
+    if s["needs_review_moments"]:
+        print(f"  NEEDS REVIEW: {s['needs_review_moments']} moments rest on an album "
+              f"alone — an album is ~32% wrong (D23)")
     if s["unassigned_moments"]:
         print(f"  UNASSIGNED: {s['unassigned_moments']} moments "
               f"({s['unassigned_media']} files) — nobody said which pet")
