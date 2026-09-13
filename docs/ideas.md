@@ -152,6 +152,13 @@ its own images**. Detection results and crops are both pure functions of
 (file bytes, parameters), so recomputing them is wasted work. Adding one
 photo currently costs a full re-ingest of everything.
 
+### Status
+
+Items 1, 2 and 4 shipped 2026-09-13 (issues #1, #2, #3): ingest 6m25s → 4.8s,
+render 3m11s → 0.79s, page 23.2 MB → 1.1 MB plus an assets folder. Item 3
+(stable identity) is issue #4 and is now mostly adopting the content keys the
+caches already compute. Items 5 and 6 remain untouched.
+
 ### Incremental plan, cheapest and highest-value first
 
 1. **Content-hash cache for detection.** Key on a hash of the file bytes plus

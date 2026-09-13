@@ -130,3 +130,43 @@ try, and it is what made iterating on the anchor fix practical at all.
 
 Page is now 23.2 MB. Single-file base64 is at the end of its useful life; see
 I4 item 4.
+
+## 2026-09-13 — Caching, and the page stops being a blob
+
+Moved the backlog into GitHub issues (12, labelled now/next/later, with
+`correctness` reserved for silent-wrong-answer risks since two of the three
+real findings so far were that class). Then ran the three `now` issues as two
+parallel subagents split by file, so they could not collide: detection cache
+in `ingest.py`, crop cache plus external assets in `render.py`. Both landed
+clean; I reviewed the diffs and re-ran everything myself rather than taking
+the reports.
+
+**The numbers are better than expected.**
+
+| | cold | warm |
+|---|---|---|
+| ingest, 4,383 files | 6m25s | **4.8s** (100% hits) |
+| render, 1,378 moments | 3m11s | **0.79s** (100% hits) |
+
+Output byte-identical between cold and warm in both cases, checked section by
+section on ingest (media, moments, eras, milestones, merge, stats).
+
+**The page went from 23.2 MB to 1.1 MB** plus a 16.6 MB assets folder.
+Verified in a browser with the cache moved aside: 1,389 images, zero data
+URIs, all resolving from `izzy_assets/`, and an expanded burst's frames
+resolving too — so the folder stands alone. `--assets inline` still emits the
+single portable file, and because the cache key covers *encoding* rather than
+*delivery*, that run reused the external run's cache and took 0.5s.
+
+Two things worth remembering beyond the speed. First, iteration cost was the
+real constraint all along — the anchor fix earlier today was painful only
+because every attempt cost 20 minutes, and that class of pain is now gone.
+Second, the cache key design is the interesting part: content digest plus
+every parameter that reaches the encoder, which is tight in both directions.
+Changing `--thumb` missed exactly the thumbnails and kept every frame and hero
+as a hit. Too loose would have served stale images after a parameter change;
+too tight would never hit at all.
+
+Content digests were the point of the exercise as much as the speed — they
+are what #4 (stable identity, D13) needs, and that is now mostly a matter of
+adopting keys that already exist.
