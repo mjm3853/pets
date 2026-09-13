@@ -107,6 +107,25 @@ can dethrone one, and a "longest quiet stretch" can even shrink. Superlatives
 already shown to a user must be treated as versioned observations, not
 standing records.
 
+## `contributor` — measured, not theorised
+
+Two real rolls, merged: Matt 1,782 photos of Izzy, Renee 2,142, with only
+**20 files in common** (the same photo texted between them at some point,
+kept once). Each holds close to 290 days the other has nothing for. Merged
+day coverage is 772 against 484 and 490 for each alone — **the merge adds
+58% more days than the better single roll**, and 81 moments are built from
+both cameras at the same event.
+
+That is the D6 wedge, quantified, from two ordinary phone exports with no
+shared album and no coordination.
+
+**Contamination is real but small.** Renee's roll contained two photos of
+other people's dogs from 2018 and 2019, years before Izzy. At 0.05% that is
+harmless to the archive — but it was catastrophic to anything computed as an
+extremum (see D15), which is the actual lesson. Individual pet ID becomes
+necessary once a second roll joins; it does **not** need to land before the
+merge is valuable.
+
 ## `contributor` — and why device is not one
 
 This archive has three camera models. It is **one person upgrading phones**:
@@ -120,8 +139,10 @@ account identity, with device kept as metadata. Perfectly clean device
 succession is also a decent heuristic for *stitching* one person's history
 across upgrades.
 
-Consequence for D6: this dump cannot test multi-contributor merging. That
-still needs a second person's roll.
+Device succession still is not contribution: this archive now holds five
+camera models across two people, and the model tells you which phone, never
+which person. Contributor is carried explicitly through ingest from the roll
+a file arrived in.
 
 ## What is not in the model yet
 

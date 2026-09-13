@@ -310,3 +310,50 @@ reaching into the past is *new old memories*, the most emotionally valuable
 thing this product can deliver, and hiding it wastes that.
 
 **What would change it:** Nothing planned.
+
+---
+
+## D15 — Derived anchors must be robust to outliers, never extrema
+
+**Status:** locked · **Date:** 2026-09-13
+**See:** [log.md](log.md) 2026-09-13, [I1](ideas.md)
+
+**Decision:** No user-visible fact may be computed as a raw minimum or
+maximum over the archive. The timeline anchor is the first date photography
+*sustains* (≥5 moments within 30 days), not the earliest photo.
+
+**Why:** Measured. Two misdetected photos out of 3,924 — someone else's
+chihuahua in 2018 and beagle in 2019, sitting in a second contributor's roll
+— moved the anchor back two and a half years, invented two single-moment
+chapters, shifted every chapter boundary by seven months and relabelled the
+pet's actual first year as "Year 3". An extremum gives a single outlier
+unbounded leverage over the entire narrative spine, and detection will never
+be clean enough to rely on one.
+
+**How to apply:** Anything anchored, dated or superlative needs an outlier
+story before it is shown. Extend to the other derived maxima (longest burst,
+busiest day, longest gap), which are currently still raw extrema and carry
+the same fragility at smaller blast radius.
+
+**What would change it:** Nothing. The thresholds may need tuning per
+archive; the principle does not.
+
+---
+
+## D16 — Media that predates the anchor is quarantined, not deleted
+
+**Status:** locked · **Date:** 2026-09-13 · **Extends:** D11
+
+**Decision:** Moments before the anchor are flagged, held out of the
+timeline, and reported with filename and contributor — the same treatment
+undated media gets (D11). Never silently dropped.
+
+**Why:** They are usually another animal, but not always. For a rescue or a
+rehoming, photos predating the owner's first are exactly the origin story the
+product most wants, and they arrive through the same door. The system cannot
+tell these apart without individual pet ID, so it must surface the ambiguity
+to the person who can.
+
+**What would change it:** Individual pet ID landing, which would let most of
+these be resolved automatically — though a human confirmation step is still
+the right default for anything that moves the anchor.

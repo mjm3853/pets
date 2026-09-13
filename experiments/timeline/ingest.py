@@ -6,7 +6,7 @@ People burst-shoot — ten frames in forty seconds is one event, not ten.
 So ingest runs: media -> detection -> burst clustering -> moments -> eras.
 
 Usage:
-    uv run ingest.py "/path/to/photos" --pet Izzy --out moments.json
+    uv run ingest.py --roll Matt="/path/a" --roll Renee="/path/b" --pet Izzy
 """
 
 import argparse
@@ -66,10 +66,16 @@ def variant(name: str) -> str:
     return "photo"
 
 
-def scan(root: Path, model: YOLO, conf: float) -> list[dict]:
+def scan(root: Path, who: str, model: YOLO, conf: float, seen: dict) -> list[dict]:
     paths = sorted(p for p in root.rglob("*") if p.suffix.lower() in MEDIA_EXTS | VIDEO_EXTS)
     media = []
     for i, path in enumerate(paths, 1):
+        # The same photo often lives in two rolls after being texted between
+        # them. Pixel filenames carry a millisecond timestamp, so a repeat
+        # name is the same capture. First roll to claim it keeps it.
+        if path.name in seen:
+            seen[path.name].setdefault("also_in", []).append(who)
+            continue
         if i % 100 == 0:
             print(f"  {i}/{len(paths)}")
         is_video = path.suffix.lower() in VIDEO_EXTS
@@ -84,6 +90,8 @@ def scan(root: Path, model: YOLO, conf: float) -> list[dict]:
 
         rec = {
             "file": path.name,
+            "path": str(path),
+            "contributor": who,
             "taken_at": taken_at,
             "time_source": source,
             "kind": "video" if is_video else variant(path.name),
@@ -113,6 +121,7 @@ def scan(root: Path, model: YOLO, conf: float) -> list[dict]:
                 rec["people"] = sum(1 for n in names if n == "person")
             except Exception as e:
                 rec["error"] = str(e)[:80]
+        seen[path.name] = rec
         media.append(rec)
     return media
 
@@ -151,7 +160,11 @@ def build_moments(media: list[dict]) -> list[dict]:
             "device": next((g["device"] for g in group if g["device"]), None),
             "gps": next((g["gps"] for g in group if g["gps"]), None),
             "hero": hero["file"],
+            "hero_path": hero["path"],
             "hero_box": hero["box"],
+            "hero_by": hero["contributor"],
+            "contributors": sorted({g["contributor"] for g in group}),
+            "co_attended": len({g["contributor"] for g in group}) > 1,
             "files": [g["file"] for g in group],
         })
 
@@ -167,6 +180,22 @@ def build_moments(media: list[dict]) -> list[dict]:
     return moments
 
 
+def find_anchor(pet: list[dict], min_run: int = 5, window: int = 30) -> datetime:
+    """The earliest date where photography actually *starts*, not the earliest
+    photo. A single misdetected animal years earlier is enough to wreck a
+    plain minimum — two stray dogs in a contributor's roll moved this archive's
+    anchor back 2.5 years and invented two empty chapters. Requiring a run of
+    activity makes the anchor robust to outliers without dropping anything.
+    """
+    for i, m in enumerate(pet):
+        t0 = datetime.fromisoformat(m["started_at"])
+        n = sum(1 for x in pet[i:i + min_run * 8]
+                if datetime.fromisoformat(x["started_at"]) - t0 <= timedelta(days=window))
+        if n >= min_run:
+            return t0
+    return datetime.fromisoformat(pet[0]["started_at"])
+
+
 def build_eras(moments: list[dict]) -> list[dict]:
     """Chapters are life years anchored on the first photo, not calendar years.
 
@@ -174,7 +203,7 @@ def build_eras(moments: list[dict]) -> list[dict]:
     well-photographed pet has no long silences. Life years match how people
     actually narrate a pet ("the first year") and need no tuning.
     """
-    pet = [m for m in moments if m["has_pet"] and m["dated"]]
+    pet = [m for m in moments if m["has_pet"] and m["dated"] and not m["before_anchor"]]
     if not pet:
         return []
     start = datetime.fromisoformat(pet[0]["started_at"])
@@ -203,7 +232,7 @@ def build_eras(moments: list[dict]) -> list[dict]:
 
 def build_milestones(moments: list[dict], media: list[dict]) -> list[dict]:
     """Facts worth telling a person, derived rather than entered."""
-    pet = [m for m in moments if m["has_pet"] and m["dated"]]
+    pet = [m for m in moments if m["has_pet"] and m["dated"] and not m["before_anchor"]]
     if not pet:
         return []
     out = [
@@ -237,36 +266,94 @@ def build_milestones(moments: list[dict], media: list[dict]) -> list[dict]:
     return sorted(out, key=lambda m: m["date"])
 
 
+def build_merge_report(moments: list[dict], media: list[dict], rolls: list[str]) -> dict:
+    """How much does each roll actually add? The D6 question, quantified."""
+    pet = [m for m in moments if m["has_pet"] and m["dated"] and not m["before_anchor"]]
+    days = {}
+    for m in pet:
+        days.setdefault(m["date"], set()).update(m["contributors"])
+    report = {"co_attended_moments": sum(1 for m in pet if m["co_attended"]),
+              "days_total": len(days),
+              "days_shared": sum(1 for v in days.values() if len(v) > 1),
+              "per_roll": {}}
+    for who in rolls:
+        solo_days = [d for d, v in days.items() if v == {who}]
+        report["per_roll"][who] = {
+            "media": sum(1 for x in media if x["contributor"] == who and x["pet"]),
+            "moments": sum(1 for m in pet if who in m["contributors"]),
+            "days_only_theirs": len(solo_days),
+            "earliest": min((m["date"] for m in pet if who in m["contributors"]), default=None),
+        }
+    dupes = [x for x in media if x.get("also_in")]
+    report["shared_copies"] = len(dupes)
+    return report
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("photos", type=Path)
+    ap.add_argument("--roll", action="append", default=[],
+                    metavar="NAME=PATH", help="a contributor's photo folder; repeatable")
     ap.add_argument("--pet", default="Pet")
     ap.add_argument("--out", type=Path, default=Path("moments.json"))
     ap.add_argument("--conf", type=float, default=0.30)
     ap.add_argument("--model", default="yolov8n.pt")
+    ap.add_argument("--rebuild", type=Path, metavar="MOMENTS.JSON",
+                    help="reuse detections from a previous run; skip the model entirely")
     args = ap.parse_args()
 
-    print(f"Scanning {args.photos}")
-    media = scan(args.photos, YOLO(args.model), args.conf)
+    if args.rebuild:
+        prev = json.loads(args.rebuild.read_text())
+        media = prev["media"]
+        rolls = [(w, Path(r)) for w, r in prev["source"]["rolls"].items()]
+        print(f"Rebuilding from {args.rebuild}: {len(media)} media rows, no detection")
+    else:
+        media = None
+
+    rolls = rolls if args.rebuild else []
+    for spec in args.roll:
+        who, _, path = spec.partition("=")
+        if not path:
+            raise SystemExit(f"--roll needs NAME=PATH, got {spec!r}")
+        rolls.append((who, Path(path)))
+    if not rolls:
+        raise SystemExit("pass at least one --roll NAME=PATH, or --rebuild")
+
+    if media is None:
+        model, seen, media = YOLO(args.model), {}, []
+        for who, root in rolls:
+            print(f"Scanning {who}: {root}")
+            media += scan(root, who, model, args.conf, seen)
     moments = build_moments(media)
+    _pet = [m for m in moments if m["has_pet"] and m["dated"]]
+    anchor = find_anchor(_pet) if _pet else None
+    for m in moments:
+        m["before_anchor"] = bool(
+            anchor and datetime.fromisoformat(m["started_at"]) < anchor)
     eras = build_eras(moments)
     milestones = build_milestones(moments, media)
 
     pet_media = [m for m in media if m["pet"]]
-    pet_moments = [m for m in moments if m["has_pet"] and m["dated"]]
+    pet_moments = [m for m in moments if m["has_pet"] and m["dated"]
+                   and not m["before_anchor"]]
     undated = [m for m in moments if not m["dated"]]
+    strays = [m for m in moments if m["has_pet"] and m["dated"] and m["before_anchor"]]
     doc = {
         "pet": {"name": args.pet,
                 "species": Counter(m.get("species") for m in pet_media).most_common(1)[0][0] if pet_media else None,
                 "first_seen": pet_moments[0]["date"] if pet_moments else None,
                 "last_seen": pet_moments[-1]["date"] if pet_moments else None},
-        "source": {"root": str(args.photos), "media_files": len(media),
+        "source": {"rolls": {who: str(root) for who, root in rolls},
+                   "media_files": len(media),
                    "devices": dict(Counter(m["device"] for m in media if m["device"]))},
+        "merge": build_merge_report(moments, media, [who for who, _ in rolls]),
         "stats": {"media_with_pet": len(pet_media), "moments": len(moments),
                   "moments_with_pet": len(pet_moments),
                   "moments_with_people": sum(1 for m in pet_moments if m["with_people"]),
                   "undated_moments": len(undated),
-                  "undated_media": sum(m["media_count"] for m in undated)},
+                  "undated_media": sum(m["media_count"] for m in undated),
+                  "before_anchor_moments": len(strays),
+                  "before_anchor_media": sum(m["media_count"] for m in strays),
+                  "anchor": anchor.date().isoformat() if anchor else None},
         "eras": eras, "milestones": milestones, "moments": moments, "media": media,
     }
     args.out.write_text(json.dumps(doc, indent=1))
@@ -280,6 +367,20 @@ def main():
     print(f"With people: {s['moments_with_people']} moments")
     print(f"Undated (no EXIF, no date in filename): {s['undated_media']} files "
           f"in {s['undated_moments']} moments — held out of the timeline")
+
+    if strays:
+        print(f"Before the anchor ({s['anchor']}): {s['before_anchor_media']} files "
+              f"in {len(strays)} moment(s) — held out, likely another animal")
+        for m in strays[:5]:
+            print(f"    {m['date']}  {m['hero']}  ({', '.join(m['contributors'])})")
+
+    mg = doc["merge"]
+    print(f"\nMERGE — {len(rolls)} roll(s), {mg['shared_copies']} shared copies skipped")
+    for who, r in mg["per_roll"].items():
+        print(f"  {who:10s} {r['media']:5d} pet photos, {r['moments']:4d} moments, "
+              f"{r['days_only_theirs']:3d} days only they have, from {r['earliest']}")
+    print(f"  co-attended moments: {mg['co_attended_moments']}  "
+          f"days both were shooting: {mg['days_shared']}/{mg['days_total']}")
     print(f"\nWritten to {args.out}")
 
 

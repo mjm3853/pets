@@ -127,3 +127,134 @@ offline place file would keep the privacy story in D1/§4 intact.
 moment containing video should probably prefer it as the hero, since motion
 is the most alive thing in an archive. Needs frame extraction before
 detection.
+
+---
+
+## I4 — Storage and media management
+
+**Surfaced:** 2026-09-13, once the archive passed 4,000 files.
+
+Still deliberately local and still proof-of-concept. This is not a call to
+build a backend; it is the list of things that will hurt next, in the order
+they will hurt, so the PoC can stay fast without a rewrite.
+
+### What it costs today
+
+| | |
+|---|---|
+| Originals | ~20 GB extracted across two rolls |
+| Detection | full re-run over every file on every ingest |
+| Thumbnails | re-cropped from originals on every render |
+| Rendered page | 17.8 MB of base64, growing linearly with moments |
+
+The two real problems are that **nothing is cached** and **the page embeds
+its own images**. Detection results and crops are both pure functions of
+(file bytes, parameters), so recomputing them is wasted work. Adding one
+photo currently costs a full re-ingest of everything.
+
+### Incremental plan, cheapest and highest-value first
+
+1. **Content-hash cache for detection.** Key on a hash of the file bytes plus
+   model and confidence. Re-ingest then only pays for genuinely new files,
+   which turns a second roll arriving from a 15-minute job into a 2-minute
+   one. This is the single biggest win and it is small.
+2. **Content-hash cache for crops.** Same idea keyed on hash plus crop
+   geometry and size. Makes render iteration cheap, which matters because
+   render is where design gets tuned.
+3. **Stable media identity.** Cache keys are content hashes, which is exactly
+   what D13 asks for. Adopting them for caching gets the identity fix almost
+   for free — do these together rather than inventing two schemes.
+4. **Optional external thumbnails.** Emit a folder of JPEGs plus a small HTML
+   instead of one fat base64 file, with the self-contained mode kept behind a
+   flag for sharing. Faster to open, browser-cacheable, and lazy loading
+   actually works. The single-file mode stops scaling somewhere around
+   25–30 MB.
+5. **SQLite instead of a JSON blob.** `moments.json` is fine at this size and
+   will get awkward past roughly 10k media rows, particularly for the "which
+   files changed" queries that caching wants. Not yet.
+6. **Never keep the zip after extraction.** Already practice; worth stating.
+
+### What this rehearses for the real product
+
+The vision's §4 architecture is on-device index plus selective upload. The
+PoC should mirror that shape rather than diverge from it: **index everything,
+materialize only what is displayed.** A content-addressed local cache with a
+derived-artifact layer on top is a small version of exactly that, so work
+here is not throwaway. Resist anything that assumes all originals are
+present and local forever, because on a phone they will not be.
+
+---
+
+## I5 — The two loops: onboarding and maintenance
+
+**Surfaced:** 2026-09-13, from Matt.
+
+There are at least two distinct user experiences, and they want opposite
+things from the same machinery.
+
+### Loop 1 — onboarding a life that already happened
+
+Bulk import of an unorganized archive. High volume, one big push, user
+present and motivated, tolerant of latency. The job is not "add photos", it
+is **establish coverage**: get the beginning (the puppy and adoption
+photos), and get a representative spread across the whole life.
+
+Observed in this project, twice. The first export was missing the first
+three months entirely. The second contributor's roll reaches back further
+still. Both times the most emotionally valuable material was the part that
+was missing, and neither absence was visible until something else arrived to
+reveal it.
+
+That suggests the product's job during onboarding is **showing the user
+where the holes are**, not celebrating the volume it imported. Coverage is
+measurable with what already exists: months with at least one moment, the
+gap distribution, moments per life year. "You have 400 photos from 2021 and
+12 from 2023" is a true, specific, actionable nudge. "Do you have anything
+from before you brought her home?" is the highest-value question the product
+can ask, and it should ask it explicitly, because those photos are usually in
+someone else's roll or on a dead phone.
+
+### Loop 2 — maintenance
+
+Steady state. A few photos a week, arriving continuously, competing with
+everything else for attention. Must be effectively zero-effort or it dies —
+this is the effort/payoff asymmetry the vision doc opens with. The daily
+value here is resurfacing, not capture, so nudges have to be earned rather
+than nagging, and correction (wrong pet, wrong date, not-actually-a-moment)
+has to be cheap and batched.
+
+### Where the two collide with the architecture
+
+**Onboarding never ends.** Renee's roll is an onboarding-shaped event
+arriving in year five of steady state. A rescue, an old phone, a new
+contributor, a Takeout export — every one of them is Loop 1 happening during
+Loop 2. So onboarding is not a phase with an exit; it is a **mode the system
+must support forever**. This is D14 restated more sharply, and it means the
+bulk path cannot be a throwaway onboarding script.
+
+**They need opposite notification behaviour.** Loop 2's trickle is genuinely
+new and worth surfacing. Loop 1's flood is *old* content arriving now, and
+firing four hundred "new moment" notifications would be catastrophic. The
+system therefore has to separate **taken-at from ingested-at** everywhere,
+and drive resurfacing off taken-at while driving "what changed" off
+ingested-at. Neither field is optional and they are not interchangeable.
+
+**Batch and stream want the same code.** Loop 1 is Loop 2 run four thousand
+times — but only if ingest is idempotent and identity is stable, which is
+exactly what D13 requires. Getting that right once means one ingest path
+instead of two.
+
+**The digest is the shared surface.** Both loops end in the same question:
+what just arrived, and what does it change? I1 already proposes an import
+digest for backfill. The same object serves maintenance at a smaller scale.
+Build one, size it to the import.
+
+### Open questions
+
+1. What is the coverage metric, concretely, and is it legible to a user?
+2. Does the product ever ask for specific missing periods, and how does that
+   avoid feeling like homework?
+3. What is the correction UI, given corrections arrive in batches after a
+   bulk import but one at a time in steady state?
+4. Where does a second contributor get invited — during onboarding, or when
+   the system notices coverage gaps someone else could fill?

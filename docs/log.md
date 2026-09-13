@@ -1,0 +1,132 @@
+# Working log
+
+Append-only. Newest at the bottom. **Never edit or delete a past entry** — if
+something here turns out to be wrong, write a new entry saying so. The value
+of this file is that it records what was believed at the time, including the
+things that did not survive contact with data.
+
+Decisions go in [decisions.md](decisions.md), open problems in
+[ideas.md](ideas.md), the object model in [data-model.md](data-model.md).
+This file is the narrative: what was tried, what happened, what it cost.
+
+---
+
+## 2026-09-13 — First real data
+
+Started from a written product vision, nothing built. Critiqued it and found
+the central weakness: the vision's wedge was auto-detection plus resurfacing,
+both of which Apple Photos and Google Photos already ship for free. Reframed
+the wedge as the pet as a **cross-person entity**, which neither platform
+does because both are built around a single account (D6).
+
+Household is Android plus a Mac, so the ingest path is `adb pull` from
+`/sdcard/DCIM/Camera` and, later, ML Kit on-device (D7).
+
+**First archive: 1,274 files, one dog, five years.** Detection found the pet
+in 90% of files. The finding that reshaped everything: burst-clustering
+collapsed 1,144 photos into 549 moments, 2.1×. A file is not a moment (D9).
+Gap-based era segmentation produced a single era across five years, so
+chapters became life years anchored on the first photo (D10), which derived
+the gotcha day and every anniversary with no user input.
+
+Cost: ~4 min to detect 1,274 files on CPU, ~3 min to render. Output was a
+9.7 MB self-contained HTML page.
+
+## 2026-09-13 — The past moved
+
+A second export arrived, a clean superset: 708 new files, **all of them
+earlier** than what had been the first photo. The real puppyhood, missing
+from the first export entirely.
+
+Re-ingesting moved the anchor 103 days earlier and changed 9 of 10
+milestones, every chapter boundary and all five anniversaries. Worse,
+**100% of 587 moment IDs were renumbered**, because they were positional.
+Stale pointers did not error — each resolved to a different, plausible
+photo. The "first photo" milestone silently pointed at an unrelated Tuesday.
+
+That produced D13 (identity must never be positional) and D14 (the past is
+never settled), and opened I1 as the standing writeup of the backfill
+problem. This was the single most useful thing that happened to the project:
+a bug class that would have shipped, caught by accident, on real data.
+
+## 2026-09-13 — Made the sheet explorable
+
+Added a per-chapter day-level heatmap, sized contact-sheet cells by burst
+length, and made cells expand in place to show the whole burst in sequence
+with seconds between frames.
+
+The interesting bit is that **burst length is a free importance signal**.
+Nobody rates their photos, but they keep shooting when something matters —
+324 single-frame moments against a top of 31. No user effort, no model, and
+it is strong enough to drive visual hierarchy.
+
+Expanding a burst also shows something both platforms deliberately hide: the
+retries. Eleven near-identical frames and the one that worked. For a dog that
+is often the funniest thing in the archive, and it may be a real product
+surface rather than a debug view.
+
+Page reached 17.8 MB with 1,158 burst frames embedded as base64. That is the
+point where storage stopped being free — see I4.
+
+## 2026-09-13 — Second contributor
+
+Renee's roll arrived: 2,422 files. Only **20 filenames overlap** with Matt's
+1,982, so this is a genuine second camera roll, not a shared album — the
+first actual test of D6, which the three-Pixel device succession in the first
+archive could not provide (D12).
+
+Two loops in the user experience came up in conversation and are written up
+as I5: bulk onboarding versus ongoing maintenance. The sharp version is that
+**onboarding never ends** — Renee's roll is an onboarding event arriving in
+year five of steady state — and that the two loops need opposite notification
+behaviour, which means ingest has to distinguish *taken-at* from
+*ingested-at*. See I5.
+
+## 2026-09-13 — The merge works, and two dogs nearly broke it
+
+Ran both rolls together for the first time: 4,383 files after skipping 20
+shared copies, 3,924 with a detected dog (90% again — the rate has now held
+across three different archives), 1,378 moments.
+
+**The D6 answer, and it is a good one.** Matt's roll alone covers 484 days
+with photos. Renee's alone covers 490. Merged, 772. The merge adds **58%
+more days than the better single roll**, and each of them holds close to 290
+days the other has nothing for. 81 moments were built from both rolls at
+once — the same event, two cameras, stitched on timestamps alone. Expanding
+one of those shows six frames from Matt and then the best frame from Renee's
+phone, which is the product thesis rendered literally.
+
+Worth saying plainly: this is the first evidence that the wedge is real, and
+it came from two ordinary phone exports with no shared album, no sync and no
+coordination.
+
+**Then the failure.** Renee's roll reaches back to 2018-11-21, two and a half
+years before Izzy. Looked at the photos rather than assuming: a chihuahua mix
+in 2018 and a beagle in 2019. Other people's dogs.
+
+**Two files out of 3,924 — 0.05% — destroyed the chapter structure.** The
+anchor moved back 2.5 years, two empty chapters appeared, every boundary
+shifted from April to late November, and Izzy's actual first year got
+relabelled "Year 3".
+
+The cause is not bad detection, it is that the anchor was a **minimum**.
+Extrema have no resistance to outliers by construction, so one stray photo
+has unbounded leverage over the entire narrative spine. Replaced it with the
+first date photography *sustains* (≥5 moments within 30 days), which restored
+the six chapters and correctly quarantined both strays by name and
+contributor rather than silently dropping them — they might be real for
+someone else's archive, e.g. foster photos of a rescue.
+
+This is the contamination D6 predicted for multi-contributor merging, arriving
+on schedule and cheaper to find than expected. It also confirms that
+individual pet ID becomes necessary the moment a second roll joins, though
+notably *not* for the merge to be valuable — 0.05% contamination with a
+robust anchor is entirely usable.
+
+**Also built the rebuild path** (`--rebuild moments.json`), which recomputes
+everything downstream of detection without re-running the model. Twenty
+minutes became seconds. That is I4's caching premise validated on the first
+try, and it is what made iterating on the anchor fix practical at all.
+
+Page is now 23.2 MB. Single-file base64 is at the end of its useful life; see
+I4 item 4.

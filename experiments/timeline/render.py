@@ -108,6 +108,7 @@ h2 { font-size:clamp(26px,3.4vw,38px); }
 .cdates { font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--accent);
   margin-top:12px; letter-spacing:.01em; }
 .cstats { list-style:none; padding:0; margin:22px 0 0; border-top:1px solid var(--rule); }
+.cstats li span { display:flex; align-items:center; gap:7px; }
 .cstats li { display:flex; justify-content:space-between; gap:16px;
   padding:9px 0; border-bottom:1px solid var(--rule); font-size:14px; color:var(--soft); }
 .cstats b { color:var(--ink); font-weight:600; font-family:"IBM Plex Mono",monospace;
@@ -146,6 +147,12 @@ h2 { font-size:clamp(26px,3.4vw,38px); }
 .sheet figure.flash img { animation:flash 1.5s ease-out; }
 @keyframes flash { 0%,40% { outline:3px solid var(--accent); outline-offset:2px; }
   100% { outline:3px solid transparent; outline-offset:2px; } }
+.who { position:absolute; left:0; right:0; bottom:0; height:3px;
+  border-radius:0 0 2px 2px; pointer-events:none; }
+.who.c0 { background:var(--accent); opacity:.85; }
+.who.c1 { background:var(--sage); opacity:.9; }
+.who.both { background:linear-gradient(90deg,var(--accent) 50%,var(--sage) 50%); }
+.sheet figure.s2 .who, .sheet figure.s3 .who { height:4px; }
 .badge { position:absolute; right:3px; bottom:3px; font-family:"IBM Plex Mono",monospace;
   font-size:9.5px; line-height:1; padding:2.5px 4px; border-radius:3px;
   background:rgba(0,0,0,.62); color:#fff; letter-spacing:.02em; pointer-events:none; }
@@ -168,6 +175,28 @@ h2 { font-size:clamp(26px,3.4vw,38px); }
 .frames figcaption { font-family:"IBM Plex Mono",monospace; font-size:10.5px;
   color:var(--faint); margin-top:5px; }
 .frames .hero figcaption { color:var(--accent); }
+
+/* contributors */
+.rolls { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:0; margin-top:34px; border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule); }
+.roll { padding:22px 24px; border-right:1px solid var(--rule); }
+.roll:last-child { border-right:0; }
+.roll h3 { font-size:25px; display:flex; align-items:center; gap:9px; }
+.dot { width:10px; height:10px; border-radius:2px; display:inline-block; flex:0 0 auto; }
+.dot.c0 { background:var(--accent); } .dot.c1 { background:var(--sage); }
+.roll .cstats { margin-top:16px; border-top:0; }
+.together { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:18px; margin-top:30px; }
+.tog { background:var(--raise); border:1px solid var(--rule); border-radius:5px;
+  padding:19px 20px 17px; }
+.tog .n { font-family:Fraunces,Georgia,serif; font-size:37px; line-height:1;
+  font-variant-numeric:tabular-nums; display:block; }
+.tog .l { font-size:13px; color:var(--soft); margin-top:9px; display:block; }
+.key { display:flex; flex-wrap:wrap; gap:16px; margin-top:22px;
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--faint); }
+.key span { display:flex; align-items:center; gap:6px; }
+.key i { width:16px; height:3px; border-radius:2px; display:inline-block; }
 .marks { display:flex; flex-wrap:wrap; gap:8px; margin-top:26px; }
 .mark { font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--soft);
   border:1px solid var(--rule); border-radius:999px; padding:5px 12px; background:var(--raise); }
@@ -237,34 +266,56 @@ def pretty(d: str) -> str:
     return datetime.fromisoformat(d).strftime("%b %-d, %Y")
 
 
-def cell(m: dict, src: str, name: str) -> str:
-    """One contact-sheet cell. Size encodes how hard the moment was shot."""
+def chapter_split(inside: list[dict], order: list[str]) -> str:
+    """Per-chapter moment counts by whose roll they came from."""
+    if len(order) < 2:
+        return ""
+    rows = []
+    for i, who in enumerate(order):
+        n = sum(1 for m in inside if who in m["contributors"])
+        if n:
+            rows.append(f'<li><span><i class="dot c{i % 4}"></i> {who}</span><b>{n}</b></li>')
+    both = sum(1 for m in inside if m["co_attended"])
+    if both:
+        rows.append(f'<li><span>Both shooting</span><b>{both}</b></li>')
+    return "".join(rows)
+
+
+def cell(m: dict, src: str, name: str, order: list[str]) -> str:
+    """One contact-sheet cell. Size encodes how hard the moment was shot,
+    the stripe along the bottom says whose roll it came out of."""
     n = m["media_count"]
     size = "s3" if n >= 12 else "s2" if n >= 6 else ""
     badge = f'<span class="badge">{n}</span>' if n > 1 else ""
-    label = f'{pretty(m["date"])}, {n} frame{"" if n == 1 else "s"}'
+    who = m["contributors"]
+    stripe = "both" if len(who) > 1 else f"c{order.index(who[0]) % 4}" if who else ""
+    label = (f'{pretty(m["date"])}, {n} frame{"" if n == 1 else "s"}'
+             f'{" · " + " and ".join(who) if who else ""}')
     return (f'<figure class="{size}" data-m="{m["id"]}" data-date="{m["date"]}" '
             f'tabindex="0" role="button" aria-label="{label}" title="{label}">'
             f'<img src="{src}" alt="{name}, {pretty(m["date"])}" loading="lazy">'
-            f'{badge}</figure>')
+            f'{badge}<i class="who {stripe}"></i></figure>')
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", type=Path, default=Path("moments.json"))
-    ap.add_argument("--photos", type=Path, required=True)
+    ap.add_argument("--photos", type=Path, help="unused; paths travel in the data")
     ap.add_argument("--out", type=Path, default=Path("timeline.html"))
     ap.add_argument("--thumb", type=int, default=200)
     ap.add_argument("--quality", type=int, default=68)
     ap.add_argument("--frame", type=int, default=152, help="burst frame size")
     ap.add_argument("--frame-quality", type=int, default=64)
+    ap.add_argument("--max-frames", type=int, default=9,
+                    help="burst frames encoded per moment")
     args = ap.parse_args()
 
     d = json.loads(args.data.read_text())
     name = d["pet"]["name"]
-    moments = [m for m in d["moments"] if m["has_pet"] and m["dated"]]
+    moments = [m for m in d["moments"]
+               if m["has_pet"] and m["dated"] and not m.get("before_anchor")]
     by_id = {m["id"]: m for m in moments}
-    files = {m["id"]: args.photos / m["hero"] for m in moments}
+    files = {m["id"]: Path(m["hero_path"]) for m in moments}
 
     print(f"Encoding {len(moments)} thumbnails at {args.thumb}px")
     thumbs = {}
@@ -315,10 +366,13 @@ def main():
                 marks_by_era.setdefault(e["id"], []).append(ms)
                 break
 
+    order = list(d["source"]["rolls"]) if "rolls" in d["source"] else []
+    mg = d.get("merge", {})
+
     # ---- burst frames: every non-hero frame in a multi-frame moment
     by_name = {x["file"]: x for x in d["media"]}
     todo = [(m, f) for m in moments if m["media_count"] > 1
-            for f in m["files"] if f != m["hero"]]
+            for f in m["files"][:args.max_frames] if f != m["hero"]]
     print(f"Encoding {len(todo)} burst frames at {args.frame}px")
     bursts = {}
     for i, (m, fname) in enumerate(todo, 1):
@@ -326,13 +380,14 @@ def main():
             print(f"  {i}/{len(todo)}")
         row = by_name.get(fname, {})
         try:
-            src = crop(args.photos / fname, row.get("box"), args.frame, args.frame_quality)
+            src = crop(Path(row["path"]), row.get("box"), args.frame, args.frame_quality)
         except Exception:
             continue
         off = int((datetime.fromisoformat(row["taken_at"])
                    - datetime.fromisoformat(m["started_at"])).total_seconds())
         bursts.setdefault(m["id"], []).append(
-            {"s": src, "t": off, "k": row.get("kind", "photo")})
+            {"s": src, "t": off, "k": row.get("kind", "photo"),
+             "w": row.get("contributor", "")})
 
     def offset(m):
         return int((datetime.fromisoformat(
@@ -344,13 +399,16 @@ def main():
         "c": datetime.fromisoformat(m["started_at"]).strftime("%-I:%M %p").lower(),
         "n": m["media_count"], "sp": m["span_seconds"], "p": m["with_people"],
         "dev": m["device"] or "", "ht": offset(m), "f": bursts.get(m["id"], []),
+        "hw": m.get("hero_by", ""), "who": m.get("contributors", []),
+        "trunc": max(0, m["media_count"] - args.max_frames),
     } for m in moments}
 
     print("Encoding chapter heroes")
     chapters = []
     for e in d["eras"]:
         hero_m = next((m for m in moments if m["hero"] == e["hero"]), None)
-        hero = wide(args.photos / e["hero"], hero_m["hero_box"] if hero_m else None, 1300, 80)
+        hero = wide(Path(hero_m["hero_path"]) if hero_m else files[moments[0]["id"]],
+                    hero_m["hero_box"] if hero_m else None, 1300, 80)
         inside = [m for m in moments if e["start"] <= m["date"] <= e["end"]]
 
         # day heatmap, one column per week, Sunday at the top
@@ -387,7 +445,8 @@ def main():
                 f'{"".join(f"<span class=%r></span>" % f"hc l{i}" for i in range(5))}'
                 f'<span>busier &mdash; click a day to find it below</span></div>')
 
-        sheet = "".join(cell(m, thumbs[m["id"]], name) for m in inside if m["id"] in thumbs)
+        sheet = "".join(cell(m, thumbs[m["id"]], name, order)
+                        for m in inside if m["id"] in thumbs)
         marks = "".join(
             f'<span class="mark"><b>{ms["label"]}</b> · {pretty(ms["date"])}</span>'
             for ms in marks_by_era.get(e["id"], []))
@@ -404,6 +463,7 @@ def main():
         <li><span>Moments</span><b>{e['moments']}</b></li>
         <li><span>Photos kept</span><b>{e['media']}</b></li>
         <li><span>With her people</span><b>{e['with_people']}</b></li>
+        {chapter_split(inside, order)}
         <li><span>Days covered</span><b>{days}</b></li>
       </ul>
     </div>
@@ -412,6 +472,49 @@ def main():
   {f'<div class="marks">{marks}</div>' if marks else ''}
   <div class="sheet">{sheet}</div>
 </div></article>""")
+
+    merge_section = ""
+    if len(order) > 1 and mg:
+        cards = []
+        for i, who in enumerate(order):
+            r = mg["per_roll"][who]
+            cards.append(f"""<div class="roll">
+      <h3><span class="dot c{i % 4}"></span>{who}</h3>
+      <ul class="cstats">
+        <li><span>Photos of {name}</span><b>{r['media']:,}</b></li>
+        <li><span>Moments</span><b>{r['moments']}</b></li>
+        <li><span>Days only they have</span><b>{r['days_only_theirs']}</b></li>
+        <li><span>Goes back to</span><b>{pretty(r['earliest'])}</b></li>
+      </ul></div>""")
+        first = min(mg["per_roll"].items(), key=lambda kv: kv[1]["earliest"])
+        merge_section = f"""
+<section><div class="wrap">
+  <div class="shead"><h2>Two rolls, one dog</h2>
+  <p class="eyebrow">{len(order)} contributors</p></div>
+  <p class="lede">Neither phone holds the whole story. These are two camera
+  rolls that were never shared, never synced and never organised, merged on
+  nothing but timestamps and a detector that knows what a dog looks like.</p>
+  <div class="rolls">{''.join(cards)}</div>
+  <div class="together">
+    <div class="tog"><span class="n">{mg['days_shared']}</span>
+      <span class="l">days both of them were photographing her, out of
+      {mg['days_total']} days with any photo at all</span></div>
+    <div class="tog"><span class="n">{mg['co_attended_moments']}</span>
+      <span class="l">moments built from both rolls at once — the same event,
+      two cameras, stitched by time</span></div>
+    <div class="tog"><span class="n">{mg['shared_copies']}</span>
+      <span class="l">files that were the same photo in both rolls, texted
+      between them at some point, kept once</span></div>
+  </div>
+  <p class="note">The earliest photo in the whole archive is
+  <strong>{first[0]}&rsquo;s</strong>, from {pretty(first[1]['earliest'])}. One
+  roll alone would have started the story later.</p>
+  <div class="key">
+    {''.join(f'<span><i style="background:var(--{"accent" if i == 0 else "sage"})"></i>{w} only</span>' for i, w in enumerate(order))}
+    <span><i style="background:linear-gradient(90deg,var(--accent) 50%,var(--sage) 50%)"></i>both</span>
+    <span>&mdash; the stripe under each thumbnail below</span>
+  </div>
+</div></section>"""
 
     s, src = d["stats"], d["source"]
     span = datetime.fromisoformat(moments[-1]["date"]) - datetime.fromisoformat(moments[0]["date"])
@@ -455,6 +558,8 @@ def main():
   <strong>{gap['label'].split('— ')[-1] if gap else 'n/a'}</strong>.</p>
 </div></section>
 
+{merge_section}
+
 <section><div class="wrap">
   <div class="shead"><h2>On this day</h2>
   <p class="eyebrow">{today.strftime('%B %-d')}</p></div>
@@ -481,6 +586,12 @@ def main():
     <div class="row"><span class="k">{s['undated_media']}</span><span class="v">files had no
       EXIF and no date in the filename — screenshots and saved messages.
       <b>Held out rather than guessed at.</b></span></div>
+    <div class="row"><span class="k">{s.get('before_anchor_media', 0)}</span><span class="v">photos of
+      the <b>wrong dog</b> — other people's animals in a contributor's roll, years before
+      {name} existed. Two files out of {s['media_with_pet']:,} were enough to drag the
+      timeline's anchor back 2.5 years and invent two empty chapters, because an anchor
+      built from a minimum has no defence against one outlier. Now the anchor is the first
+      date photography actually <b>sustains</b>.</span></div>
     <div class="row"><span class="k">{len(src['devices'])}</span><span class="v">camera models
       ({', '.join(src['devices'])}) — one person upgrading phones, not three contributors.
       <b>Device is not a contributor.</b></span></div>
@@ -516,20 +627,24 @@ function openBurst(fig) {{
   if (!d) return;
   fig.classList.add('open');
 
-  const frames = d.f.map(f => ({{ src: f.s, t: f.t, hero: false }}));
-  frames.push({{ src: fig.querySelector('img').src, t: d.ht, hero: true }});
+  const multi = (d.who || []).length > 1;
+  const frames = d.f.map(f => ({{ src: f.s, t: f.t, w: f.w, hero: false }}));
+  frames.push({{ src: fig.querySelector('img').src, t: d.ht, w: d.hw, hero: true }});
   frames.sort((a, b) => a.t - b.t);
 
   const strip = frames.map(f => {{
     const off = f.t === 0 ? 'start' : '+' + dur(f.t);
+    const by = f.w && multi ? '<br>' + f.w : '';
     return '<figure class="' + (f.hero ? 'hero' : '') + '">'
       + '<img src="' + f.src + '" alt="" loading="lazy">'
-      + '<figcaption>' + off + (f.hero ? ' &middot; pick' : '') + '</figcaption></figure>';
+      + '<figcaption>' + off + (f.hero ? ' &middot; pick' : '') + by + '</figcaption></figure>';
   }}).join('');
 
   const bits = [plural(d.n, 'frame')];
   if (d.n > 1 && d.sp > 0) bits.push('over ' + dur(d.sp));
   if (d.p) bits.push('with a person in frame');
+  if (multi) bits.push('shot by ' + d.who.join(' and '));
+  if (d.trunc) bits.push('showing first ' + (d.f.length + 1) + ' of ' + d.n);
   if (d.dev) bits.push(d.dev);
 
   const el = document.createElement('div');
