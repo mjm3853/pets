@@ -570,3 +570,46 @@ left for us, and it is the part that landed.
 **What would change it:** #32 showing the album is a poor input after all —
 too curated, too lossy, or unexportable at fidelity. Until then, "connect
 the camera roll" in the vision (§2) should be read as "connect the album".
+
+---
+
+## D23 — An album is a subject *hint*, not ground truth
+
+**Status:** locked · **Date:** 2026-09-13 · **Corrects:** D22 · **Refines:** D21 · **See:** issue #33
+
+**Decision:** A photo's presence in a pet's exported album is **strong
+evidence** that the pet is in it, not proof, and not proof that *only* that
+pet is in it. `--about` must record `assigned_by: "album"`, a tier below
+`user`, and album assignments are reviewable rather than final.
+
+**Why:** Measured. Forty detections sampled from Oakley's exported Google
+Photos album and tagged by hand: **20 are Izzy, 20 are Oakley.** In 13 of
+40 cases (32%) the model attributes a photo solely to Oakley when a human
+says it is Izzy. Extrapolated over the album's 129 detections, roughly **42
+photos are misattributed**, and Ray's 77 detections carry the same
+unmeasured risk.
+
+The cause is obvious in hindsight and general: people build a pet's album
+from the occasions that pet was around, and on those occasions **both dogs
+are in the frame**. An album about a visiting dog is really an album about
+the visits. Google's pet grouping has the same property — it groups photos
+*containing* an animal, not photos *only* of it.
+
+**What this corrects in D22:** the platform did the gathering and a first
+cut at recognition, but its output is not a clean single-pet classification.
+"The album is the assignment" was too strong. The album is the best cheap
+prior available, and it still needs a human pass.
+
+**What it invalidates:** the "zero manual fixes, zero unassigned" result
+from #22 and #28. That was not inference succeeding; it was a noisy
+assignment source being taken at face value. The real correction cost for
+multi-pet is **not yet known**, and #33 measures it.
+
+**How to apply:** Never treat an album as final. Multi-pet households need
+the correction pass (#30) as a normal step, not an exception. Where two
+known pets plausibly co-occur, prefer recording **both** appearances over
+picking one.
+
+**What would change it:** A source that really is single-pet ground truth —
+a user tapping "this is Oakley" per photo. That is #30, and it stays the
+only `user` tier.

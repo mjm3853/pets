@@ -583,3 +583,43 @@ whether the artifact produces a reaction.
 - Matt's and Renee's photos are in their dogs' pages — 51 of Ray's files and
   125 of Oakley's came off Pixels in this household. The friends have not
   seen most of those.
+
+## 2026-09-13 — The album is not ground truth
+
+Ran `rawroll.py` as a demo against Oakley's album (no phone was connected
+for the real raw-roll test), Matt tagged the 40-photo sample, and it
+overturned the best result of the day.
+
+**Of 40 detections sampled from Oakley's exported album: 20 are Izzy, 20 are
+Oakley.** In 13 of 40 — **32%** — the model attributes a photo solely to
+Oakley where a human says Izzy. Over the album's 129 detections that is
+roughly 42 misattributed photos. Ray's 77 carry the same risk, unmeasured.
+
+Resolving the tally took a minute of care: the page asked "is this Izzy?"
+while showing Oakley's album, so "pet" was ambiguous. Cross-referencing
+against album membership was inconclusive (40% vs 25%), so I built a contact
+sheet of both groups and looked. Bottom row uniformly the dark merle dog,
+top row the cream one. Unambiguous once seen, and another entry in the
+column marked *look at the photos*.
+
+**What it means.** D22 said the album is the assignment. Too strong, and now
+corrected as D23: an album is a **subject hint**. People build a pet's album
+from the occasions that pet was around, and on those occasions both dogs are
+in the frame. An album about a visiting dog is really an album about the
+visits. Google's own pet grouping has the same property — it groups photos
+*containing* an animal, not photos *only* of it.
+
+**It also invalidates the day's best number.** #22 and #28 reported "zero
+manual fixes, zero unassigned" and I flagged that as suspicious at the time
+because the albums were doing the work. It was worse than suspicious: the
+assignment source was 32% wrong and was being taken at face value. The real
+correction cost for multi-pet is still unknown. #33 measures it.
+
+Worth naming the pattern, because it has now happened three times. The
+strongest-looking result of a session — 90% detection, zero contamination,
+zero manual fixes — has each time been an artifact of input that something
+upstream had already cleaned. The fix each time was to look at the actual
+photos rather than the summary statistic.
+
+The 40 tags are saved as `experiments/timeline/fixtures/oakley-40-tagged.json`
+so #33 can be scored against them rather than re-tagged.

@@ -4,6 +4,7 @@ __pycache__/
 *.pt
 *.json
 !pyproject.toml
+!fixtures/*.json
 *.html
 *_assets/
 .cache/
