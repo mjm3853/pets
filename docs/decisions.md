@@ -582,12 +582,21 @@ evidence** that the pet is in it, not proof, and not proof that *only* that
 pet is in it. `--about` must record `assigned_by: "album"`, a tier below
 `user`, and album assignments are reviewable rather than final.
 
-**Why:** Measured. Forty detections sampled from Oakley's exported Google
-Photos album and tagged by hand: **20 are Izzy, 20 are Oakley.** In 13 of
-40 cases (32%) the model attributes a photo solely to Oakley when a human
-says it is Izzy. Extrapolated over the album's 129 detections, roughly **42
-photos are misattributed**, and Ray's 77 detections carry the same
-unmeasured risk.
+**Why:** Measured, twice, and the second time was worse. Forty detections
+sampled from Oakley's album and tagged by hand: **20 Izzy, 20 Oakley**.
+Then a full review pass over Ray's album found where its photos actually
+belong:
+
+| | photos |
+|---|---|
+| Shadow — a **third friend's dog** nobody had declared | 33 |
+| Ray | 31 |
+| Izzy **and** Ray together | 18 |
+| Oakley | 3 |
+| Izzy alone / unplaceable | 2 |
+
+**An album named for one dog contained four.** Barely a third of it is the
+dog on the label, alone.
 
 The cause is obvious in hindsight and general: people build a pet's album
 from the occasions that pet was around, and on those occasions **both dogs
@@ -609,6 +618,12 @@ multi-pet is **not yet known**, and #33 measures it.
 the correction pass (#30) as a normal step, not an exception. Where two
 known pets plausibly co-occur, prefer recording **both** appearances over
 picking one.
+
+**Why it happens, generalised.** An album you make of *someone else's* pet
+is really "photos from the times that animal was around" — and on those
+occasions your dog, their dog, and a third friend's dog were all there. The
+label names the occasion, not the subject. Expect this to be worse for
+friends' pets than for your own.
 
 **What would change it:** A source that really is single-pet ground truth —
 a user tapping "this is Oakley" per photo. That is #30, and it stays the

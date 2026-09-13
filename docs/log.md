@@ -782,3 +782,41 @@ Shadow one, on the same phone, so it is almost certainly Shadow too — but
 Matt's answer stands until he changes it (D21), and now he can.
 
 Assignment sources are now 6 user / 104 album / 1,381 inferred.
+
+## 2026-09-13 — The album named for one dog contained four
+
+Matt worked the queue properly: **28 answers in one pass**. The result is
+the most important measurement the project has produced.
+
+**Only 1 of 28 confirmed what the model said.** 11 added a second pet the
+model had missed, 14 changed the pet outright, 2 were "not sure". A 1-in-28
+agreement rate is a *good* result for the queue — it surfaced almost
+exclusively things that were actually wrong — and a bad one for the album.
+
+**Where Ray's album photos actually belong, after review:**
+
+| | photos |
+|---|---|
+| Shadow — a third friend's dog nobody had declared | 33 |
+| Ray | 31 |
+| Izzy **and** Ray together | 18 |
+| Oakley | 3 |
+| Izzy alone / unplaceable | 2 |
+
+An album named for one dog contained **four**, and barely a third of it is
+the dog on the label. The earlier Oakley estimate (~68% right) was
+optimistic; for a friend's pet it is closer to a third.
+
+The reason generalises and is worth holding onto: **an album you make of
+someone else's pet is really "photos from the times that animal was
+around"** — and on those occasions your dog, their dog and a third friend's
+dog were all there. The label names the occasion, not the subject.
+
+**The cost.** 34 standing corrections covering 58 photos, against 225
+album-assigned photos: **15 corrections per 100 album photos**. That bought
+disentangling four dogs. Queue is down from 62 to 28; Shadow went 0 → 19
+moments, Ray 49 → 29, multi-pet moments 24 → 58.
+
+Nothing about this is a failure of the product. It is the product: D24 says
+the job is curating a mostly-right pile, and this is what "mostly right"
+actually looks like when the pile is about a friend's dog.
