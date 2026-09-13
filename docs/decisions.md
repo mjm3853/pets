@@ -174,3 +174,82 @@ consumption.
 
 **What would change it:** Real usage data showing view events are too sparse
 to be a stable weekly signal at early scale.
+
+---
+
+## D9 — A moment is a burst of media, not a file
+
+**Status:** locked · **Date:** 2026-09-13
+
+**Decision:** The narrative unit of the product is a **moment**: media
+clustered by a ~20-minute gap, with one hero frame selected inside it.
+Individual files are storage, never the thing shown.
+
+**Why:** Measured on a real 1,274-file archive, 1,144 photos of one dog are
+549 moments — 2.1× compression. People burst-shoot, so a file-per-row
+timeline shows the same pose eight times and reads as a file browser.
+Hero selection by `score × √(box area)`, with thumbnails cropped to the
+detection box, is what makes the output look curated rather than dumped.
+
+**What would change it:** Nothing planned. The gap constant may need tuning
+per species or user.
+
+---
+
+## D10 — Eras are life years anchored on the first photo
+
+**Status:** locked · **Date:** 2026-09-13
+
+**Decision:** Chapter the timeline into life years counted from the pet's
+first photo, not calendar years and not gaps in activity.
+
+**Why:** Gap-based segmentation (>45 days silent) produced exactly one era
+across five years, because a well-photographed pet has no long silences —
+the longest gap in the test archive was 36 days. Life-year anchoring needs
+no threshold, produced six clean chapters, and derived the gotcha day and
+every anniversary with zero user input.
+
+**What would change it:** An archive that starts long after the pet was
+acquired, where first-photo is a poor proxy for the anniversary the owner
+actually observes. Worth allowing a manual override of the anchor date.
+
+---
+
+## D11 — Undated media is quarantined, never guessed
+
+**Status:** locked · **Date:** 2026-09-13
+
+**Decision:** Every media row records `time_source` (`exif` / `filename` /
+`mtime`). Anything resolved only by file mtime is held out of the timeline
+spine and surfaced in its own bucket for the user to place.
+
+**Why:** 32 files in the test archive (Snapchat saves) had no EXIF and no
+date in the filename. Falling back to mtime dated them all to the day the
+archive was unpacked, which corrupted "most recent photo" and "longest
+burst" until they were quarantined. Any product ingesting from messaging
+apps hits this constantly, and a wrong date in a memory product is worse
+than a missing one.
+
+**What would change it:** Nothing planned. Content-based placement (asking
+the user, or matching against dated neighbours) could later promote these
+out of quarantine.
+
+---
+
+## D12 — Contributor is account identity; device is metadata
+
+**Status:** locked · **Date:** 2026-09-13 · **Refines:** D6
+
+**Decision:** Never infer contributors from EXIF camera model. Contributor
+is account identity; device is stored as metadata on media.
+
+**Why:** The test archive contains three camera models (Pixel 5 → 8 → 10 Pro)
+and is one person upgrading phones, with zero date overlap between devices.
+Device succession and genuine multi-contributor are indistinguishable
+without checking temporal overlap. Clean succession is, separately, a useful
+heuristic for stitching one person's history across upgrades.
+
+**Consequence:** The Izzy archive cannot test D6. Multi-contributor merging
+still needs a second household member's roll.
+
+**What would change it:** Nothing planned.

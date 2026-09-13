@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+*.pt
+*.json
+!pyproject.toml
+*.html
