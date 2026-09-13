@@ -770,6 +770,12 @@ promotes the existing guess to `assigned_by: user` and clears the item.
 **Why:** Matt, working the queue: *"is there a way to confirm that a dog is
 the correct one when reviewing? I was clicking on and off."*
 
+**Measured immediately after:** with a Yes button, one pass of 28 answers
+cleared the queue from 28 to zero — all 28 were confirmations. Without it,
+those 28 items could never have left the queue at all, because the only
+exit was changing them. The queue would have plateaued permanently, and
+emptying it would have required inventing 28 wrong answers.
+
 Toggling a pet off and on did produce a confirmation, but only by accident
 of the data model, and the intermediate state looked like deletion. The
 deeper problem is a bias: **if the only way to clear an item is to change
@@ -778,9 +784,11 @@ through correction manufactures corrections, and every one of those is a
 silent wrong answer of exactly the kind D13 and D23 exist to prevent.
 
 Confirmation is also *information*. "The album was right here" is as useful
-a signal as "the album was wrong", and without it the measured error rate is
-biased upward — the 1-in-28 agreement rate from the first pass was measured
-on a queue where agreeing was awkward.
+a signal as "the album was wrong". Note the honest version of the numbers:
+the first pass agreed with the model once in 28, the second 28 times in 28,
+but they covered **different items** — the obviously-wrong ones were worked
+first. Combined, 29 of 56 reviewed moments were already correct. The Yes
+button did not reveal a better album; it let the queue finish.
 
 **How to apply:** Anywhere a person is asked to check a derived fact, the
 affirmative must be a first-class control with its own key, not the absence

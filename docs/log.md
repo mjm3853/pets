@@ -908,3 +908,38 @@ visible while scrolling.
 Process note for next time: I verified this on Matt's live page while he had
 work in progress, which may have added a confirmation to his tray. Verify on
 a separate copy when a session is live.
+
+## 2026-09-13 — Queue cleared, and what the Yes button actually did
+
+Second pass: 28 answers, **28 of them confirmations**. Review queue went
+from 28 to **zero**.
+
+The obvious reading — that the queue was 100% accurate all along and pass
+one's 4% was a measurement artifact — is wrong, and worth stating so nobody
+repeats it. **The two passes covered different items.** In pass one Matt
+naturally worked the ones that looked wrong: the Shadow island, the mixed
+Izzy-and-Oakley moments. Pass two was the remainder, which was mostly
+correct. Selection effect, not a corrected measurement.
+
+The honest combined figure across both passes: **56 answers, 29 confirmed
+(52%)**. About half the album's moments were already right at moment level,
+which sits alongside the 32%-wrong-at-photo-level from the hand-tagged
+sample rather than replacing it.
+
+**What the Yes button actually did is better than making the number look
+good: it let the queue finish.** Without an affirmative, a *correct* item
+could never leave — the only exit was changing it. The queue would have
+plateaued at 28 permanently, and the only way to empty it would have been to
+introduce 28 wrong answers. That is the real content of D27, sharper than
+how it was first written.
+
+**Total cost of disentangling four dogs from three albums: 62 answers over
+107 photos, against 225 album-assigned photos — 28 answers per 100 album
+photos.** Two sittings, both described as fun rather than a chore (D26).
+
+Final state: Izzy 1,388 moments, Oakley 58, Ray 29, Shadow 19, 58 moments
+holding more than one pet, 0 needing review, 2 deliberately unassigned. User
+assignments now outnumber album ones 70 to 49.
+
+Two cover picks landed too — Year 5 and Year 6 now use Matt's choice over
+the formula's.
