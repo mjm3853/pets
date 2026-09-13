@@ -67,6 +67,8 @@ def build(d: dict, all_pets: list[dict], thumbs: dict, heroes: dict,
         picks = "".join(
             f'<button class="pick" type="button" data-island="{isl["start"]}"'
             f' data-pet="{q["id"]}">{q["name"]}</button>' for q in all_pets)
+        picks += ('<button class="pick ok" type="button" data-island="confirm"'
+                  ' data-confirm="1">All correct</button>')
         blocks.append(f"""<div class="island" data-ids="{",".join(m["id"] for m in ms)}">
   <div class="ihead">
     <div><b>{pet["name"]}</b> &middot; {span}

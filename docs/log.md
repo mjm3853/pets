@@ -880,3 +880,31 @@ write the same thing.
 The remaining #35 candidates need other work first: places (#11) for "where
 is this", recap selection (#15), and the gotcha-day question has no target
 because Izzy's anchor is already given and the other three are sparse.
+
+## 2026-09-13 — The queue had no way to say yes
+
+Matt, mid-review: *"is there a way to confirm that a dog is the correct one?
+I was clicking on and off."*
+
+He was right, and the workaround he found actually worked — toggling a pet
+off and on rewrites it as a user assignment — but only by accident of the
+data model, and the halfway state looks like deleting the answer.
+
+The real problem is bias, recorded as D27. **If the only way to clear a
+queue item is to change it, people change things that were right.** A queue
+that can only shrink through correction manufactures corrections, and those
+are silent wrong answers of exactly the kind the whole project has been
+guarding against.
+
+It also means the headline number from the first pass — 1 of 28 answers
+confirming the model — was measured on a queue where agreeing was awkward.
+That number is biased upward and should be re-measured now that saying yes
+is a button.
+
+Added *Yes, correct* to the per-moment picker (key `c`) and *All correct* to
+each island header, plus a green outline on answered cells so progress is
+visible while scrolling.
+
+Process note for next time: I verified this on Matt's live page while he had
+work in progress, which may have added a confirmation to his tray. Verify on
+a separate copy when a session is live.

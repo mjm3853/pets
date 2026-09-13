@@ -223,6 +223,10 @@ h2 { font-size:clamp(26px,3.4vw,38px); }
 .iacts { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
 .iacts .lab { font-family:"IBM Plex Mono",monospace; font-size:11px;
   letter-spacing:.09em; text-transform:uppercase; color:var(--faint); }
+.pick.ok { border-color:var(--sage); color:var(--sage); }
+.pick.ok[aria-pressed="true"] { background:var(--sage); border-color:var(--sage);
+  color:var(--paper); }
+.sheet figure.answered img { outline:2px solid var(--sage); outline-offset:1px; }
 .island.done { border-color:var(--accent); }
 .island.done .sheet { opacity:.45; }
 .why { font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--faint);
@@ -497,10 +501,12 @@ function openBurst(fig) {{
     '<p class="why">In the review queue because ' + d.why.join(', and ') + '.</p>');
   el.querySelector('.frames').insertAdjacentHTML('afterend',
     '<div class="who-row"><span class="lab">This is</span>' + picks
+    + '<button class="pick ok" type="button" data-confirm="1">Yes, correct<kbd>c</kbd></button>'
     + '<button class="pick" type="button" data-pet="" aria-pressed="'
     + (chosen.length === 0) + '">Not sure<kbd>0</kbd></button></div>');
   el.querySelectorAll('.who-row .pick').forEach(b =>
-    b.addEventListener('click', () => choose(fig, b.dataset.pet)));
+    b.addEventListener('click', () =>
+      b.dataset.confirm ? confirmAs(fig) : choose(fig, b.dataset.pet)));
   el.querySelector('.detclose').addEventListener('click', closeBurst);
   fig.after(el);
   el.scrollIntoView({{ block: 'nearest', behavior: 'smooth' }});
@@ -528,6 +534,20 @@ document.querySelectorAll('.hc[data-date]').forEach(btn => {{
     hit.classList.add('flash');
   }});
 }});
+
+function confirmAs(fig) {{
+  // Saying "yes" has to be as easy as saying "no". If the only way to clear a
+  // queue item is to change it, people change things that were right.
+  const id = fig.dataset.m;
+  CHOSEN[id] = [...(CHOSEN[id] || M[id].pets || [])];
+  save();
+  const open = document.querySelector('.det');
+  if (open) open.querySelectorAll('.who-row .pick').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.confirm ? 'true'
+      : b.dataset.pet ? CHOSEN[id].includes(b.dataset.pet) : CHOSEN[id].length === 0));
+  fig.classList.add('answered');
+  tray();
+}}
 
 function choose(fig, pet) {{
   const id = fig.dataset.m;
@@ -580,7 +600,9 @@ function chooseHero(btn) {{
 document.addEventListener('keydown', e => {{
   if (e.key === 'Escape') return closeBurst();
   const fig = document.querySelector('.sheet figure.open');
-  if (!fig || !/^[0-9]$/.test(e.key)) return;
+  if (!fig) return;
+  if (e.key === 'c' || e.key === 'C') return confirmAs(fig);
+  if (!/^[0-9]$/.test(e.key)) return;
   const i = Number(e.key);
   if (i === 0) return choose(fig, '');
   if (PETS[i - 1]) choose(fig, PETS[i - 1].id);
@@ -604,7 +626,9 @@ document.getElementById('tray-clear').addEventListener('click', () => {{
 document.querySelectorAll('.island .iacts .pick').forEach(b =>
   b.addEventListener('click', () => {{
     const isl = b.closest('.island');
-    isl.dataset.ids.split(',').forEach(id => {{ CHOSEN[id] = [b.dataset.pet]; }});
+    isl.dataset.ids.split(',').forEach(id => {{
+      CHOSEN[id] = b.dataset.confirm ? [...(M[id] ? M[id].pets : [])] : [b.dataset.pet];
+    }});
     save();
     isl.classList.add('done');
     isl.querySelectorAll('.iacts .pick').forEach(x =>

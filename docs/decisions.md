@@ -756,3 +756,34 @@ proven.
 
 **What would change it:** A friend finding the same loop tedious, or the
 queue staying enjoyable only while it is novel.
+
+---
+
+## D27 — A review queue must accept "yes" as easily as "no"
+
+**Status:** locked · **Date:** 2026-09-13 · **Refines:** D21, D26 · **See:** issue #33
+
+**Decision:** Every review surface offers an explicit affirmative — *Yes,
+correct* — alongside the corrections, individually and in batch. Confirming
+promotes the existing guess to `assigned_by: user` and clears the item.
+
+**Why:** Matt, working the queue: *"is there a way to confirm that a dog is
+the correct one when reviewing? I was clicking on and off."*
+
+Toggling a pet off and on did produce a confirmation, but only by accident
+of the data model, and the intermediate state looked like deletion. The
+deeper problem is a bias: **if the only way to clear an item is to change
+it, people change things that were right.** A queue that can only shrink
+through correction manufactures corrections, and every one of those is a
+silent wrong answer of exactly the kind D13 and D23 exist to prevent.
+
+Confirmation is also *information*. "The album was right here" is as useful
+a signal as "the album was wrong", and without it the measured error rate is
+biased upward — the 1-in-28 agreement rate from the first pass was measured
+on a queue where agreeing was awkward.
+
+**How to apply:** Anywhere a person is asked to check a derived fact, the
+affirmative must be a first-class control with its own key, not the absence
+of action. Silence is not consent and must never clear a queue item.
+
+**What would change it:** Nothing planned.
