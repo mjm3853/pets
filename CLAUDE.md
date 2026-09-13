@@ -47,6 +47,9 @@ user raising it first.
 - [docs/log.md](docs/log.md) is an append-only working log. Add a dated entry
   when something is learned or measured. **Never edit or delete past
   entries** — if one turns out to be wrong, write a new entry saying so.
+- [docs/security.md](docs/security.md) is the threat model. Read it before
+  changing what the generated page contains. `experiments/timeline/leakcheck.sh`
+  must pass on any page before it is sent to anyone.
 - [docs/ideas.md](docs/ideas.md) is the parking lot for problems worth
   solving later but deliberately not solved yet. Put open problems there,
   not in decisions.md. [docs/data-model.md](docs/data-model.md) holds the

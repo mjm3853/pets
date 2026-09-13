@@ -89,10 +89,14 @@ real bug.
 6. **The single-pet path stays exactly as fast and as automatic as today**
    (D19). Multi-pet and multi-person features pay their cost only where a
    second animal or person actually exists.
-7. **Photos never enter git.** `*.jpg`, `*.json`, `*.html`, `*_assets/`,
+7. **Nothing but the page leaves the laptop.** Read
+   [security.md](security.md) before any change that affects output. No
+   coordinates in a page, no originals in a shared page, no identity
+   extraction. Run `./leakcheck.sh <page>` before sending anything.
+8. **Photos never enter git.** `*.jpg`, `*.json`, `*.html`, `*_assets/`,
    `.cache/` are ignored. Check `git status` before every commit. Output is
    private and stays local.
-8. **Copy is plain.** Names, dates, counts. "With her people", not "her
+9. **Copy is plain.** Names, dates, counts. "With her people", not "her
    pawrents". Let the photos carry the feeling.
 
 ## How to think about it
