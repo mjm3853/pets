@@ -753,3 +753,32 @@ answer cheap instead. The queue now groups into islands with a one-click
 Added Shadow as a pet with nothing but a name, which the model now supports
 without complaint — no species, no date, no album. A pet with no moments
 appears in every picker but gets no page until something is assigned to it.
+
+## 2026-09-13 — Shadow gets a page, and Ray's history gets fixed
+
+Matt used the batch button and sent back six assignments. Applied:
+
+| | before | after |
+|---|---|---|
+| Ray | 49 moments, from **2012-08-29** | 42 moments, from **2015-05-01** |
+| Shadow | — | **6 moments, 9 files**, 2012–2013 |
+| review queue | 62 | **55** |
+
+The important number is not the queue. **Ray's timeline was wrong** — it
+claimed to start in 2012 on a Samsung, three years before his actual
+earliest photo, because another friend's dog was sitting in his album. It is
+now right, and it cost two clicks: one "not sure", one "all of these are
+Shadow".
+
+That is the cleanup loop doing exactly what D24 says the product is for.
+Nothing was detected; a person answered one question about six photos.
+
+**Found a real gap in the process.** A moment answered "not sure" leaves
+every pet, which also removed it from the review queue — unreachable
+forever, the one moment a human had already looked at and could not place.
+Fixed: unassigned moments now appear as their own group at the top of the
+queue. The loose 2012-08-29 17:57 moment is three hours before a confirmed
+Shadow one, on the same phone, so it is almost certainly Shadow too — but
+Matt's answer stands until he changes it (D21), and now he can.
+
+Assignment sources are now 6 user / 104 album / 1,381 inferred.

@@ -18,7 +18,8 @@ def build(d: dict, all_pets: list[dict], thumbs: dict, heroes: dict,
     moments = {m["id"]: m for m in d["moments"]}
     together = [m for m in d["moments"]
                 if len(m["appearances"]) > 1 and m["dated"]]
-    review = [m for m in d["moments"] if m.get("needs_review") and m["dated"]]
+    review = [m for m in d["moments"]
+              if (m.get("needs_review") or m.get("unassigned")) and m["dated"]]
     by_id = {p["id"]: p for p in pets}
 
     cards = []
@@ -74,6 +75,23 @@ def build(d: dict, all_pets: list[dict], thumbs: dict, heroes: dict,
   </div>
   <div class="sheet">{"".join(cell(m, thumbs[m["id"]], "", order)
                               for m in ms if m["id"] in thumbs)}</div>
+</div>""")
+    # A moment answered "not sure" leaves every pet and would otherwise leave
+    # the queue too, unreachable forever. It is the one thing a person has
+    # already looked at and could not place — it belongs at the top.
+    loose = [m for m in d["moments"] if m.get("unassigned") and m["dated"]
+             and m["id"] in thumbs]
+    if loose:
+        picks = "".join(
+            f'<button class="pick" type="button" data-island="loose"'
+            f' data-pet="{q["id"]}">{q["name"]}</button>' for q in all_pets)
+        blocks.insert(0, f"""<div class="island" data-ids="{",".join(m["id"] for m in loose)}">
+  <div class="ihead">
+    <div><b>Not sure</b>
+      <span class="imeta">{len(loose)} moment{"" if len(loose) == 1 else "s"} you looked at and could not place</span></div>
+    <div class="iacts"><span class="lab">All of these are</span>{picks}</div>
+  </div>
+  <div class="sheet">{"".join(cell(m, thumbs[m["id"]], "", order) for m in loose)}</div>
 </div>""")
     rev_sheet = "".join(blocks)
 

@@ -642,11 +642,13 @@ def render_all(args) -> None:
     digests = Digests(args.cache)
     assets = Images(Cache(args.cache, "crops"), digests, out_dir / "index.html",
                     args.assets == "external", True)
-    moments = [m for m in d["moments"] if m["appearances"] and m["dated"]]
+    moments = [m for m in d["moments"]
+               if (m["appearances"] or m.get("unassigned")) and m["dated"]]
     by_file = {x["file"]: x for x in d["media"]}
     thumbs, heroes = {}, {}
     want = {m["id"] for m in moments
-            if len(m["appearances"]) > 1 or m.get("needs_review")}
+            if len(m["appearances"]) > 1 or m.get("needs_review")
+            or m.get("unassigned")}
     for m in moments:
         if m["id"] in want:
             thumbs[m["id"]] = assets.crop(Path(m["hero_path"]), m["hero_box"],
