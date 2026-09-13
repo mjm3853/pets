@@ -1063,3 +1063,27 @@ stamped as human-verified. D27 said a queue must accept "yes" as easily as
 "no"; the corollary is that it must never make "yes" ambiguous.
 
 Remaining after this: 8 Ray claims and 2 deliberately unassigned.
+
+## 2026-09-13 — The held-back eight, answered one at a time
+
+Matt answered the 8 Ray-claim moments individually rather than batching.
+The answers were: 4 `ray+izzy`, 3 `ray` alone, 1 `izzy+oakley`.
+
+**Four of the eight would have been wrong under the batch button.** One is
+Oakley, not Ray at all; three are Ray with no Izzy, and the batch preserves
+a co-present pet by design. Holding them back was worth it, and the measured
+4-in-8 is a better argument for the corollary in D27 than the reasoning was.
+
+The general lesson is sharper than "batch carefully": **a batch is only safe
+when every item in it is the same question.** These eight looked alike to
+the grouping code — same album claim, same island — and were four different
+answers to a human who looked. Grouping is a convenience for the machine;
+the question has to be true for every item or the convenience is a hazard.
+
+Queue is now **0 needing review**, 2 deliberately unassigned, 2 album claims
+remaining (both inside moments a person already vouched for). 161 user
+appearances against 1,334 inferred — the whole friends'-album problem is
+resolved, at **109 human answers**.
+
+Final counts: Izzy 1,385, Oakley 59, Ray 28, Shadow 19, 54 moments holding
+more than one pet.
