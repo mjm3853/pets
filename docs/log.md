@@ -330,3 +330,26 @@ text thread as well as a feed — which broadens who the product is for.
 Issue #15 rewritten.
 
 Nothing built today after the review, deliberately.
+
+## 2026-09-13 — Made the issues implementable
+
+Matt asked whether the issues were detailed enough for a less capable model
+to implement, and whether they set the implementer up to think big picture.
+Honest answer was no: strong on why, weak on how. A fresh session would know
+what the feed is for but not which function to open, what shape the data
+has, what must not break, or how to prove it works.
+
+Fixed in two layers. `docs/implementing.md` is written once and linked from
+everywhere: orientation to the three files and the `moments.json` shapes, the
+two-second iteration loop, the eight rules most likely to be broken by
+accident (each one a real bug from today), how to think about an issue as a
+question rather than a feature, and a definition of done that requires
+measurements in the closing comment and a log entry. Then every open issue
+got an *Implementation* section: big picture, exact files and functions,
+data fields, ordered steps, a *Verify* list with the numbers to report, what
+the issue sets up, and a *Don't* list. The two `validate` issues got a
+protocol instead of code.
+
+The guide is the more important half. The rules section exists because
+every one of those rules was violated today by reasonable-looking code, and
+a capable model working fresh would violate several of them again.

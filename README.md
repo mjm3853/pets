@@ -11,6 +11,12 @@ Hub repo for the pet memory product — an app that auto-builds a pet's life tim
 - [docs/data-model.md](docs/data-model.md) — the core object model. Every claim measured against a real archive.
 - [docs/ideas.md](docs/ideas.md) — parking lot for problems worth solving later, deliberately unsolved.
 
+## Contributing
+
+Start with [docs/implementing.md](docs/implementing.md) — a short guide to
+the codebase, the rules that must not break, and what done means. Every
+open issue has an implementation section with files, steps and verification.
+
 ## Tracking
 
 Work lives in [GitHub issues](https://github.com/mjm3853/pets/issues), labelled

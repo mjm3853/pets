@@ -34,6 +34,11 @@ user raising it first.
   a conversation makes or changes a decision, add or update an entry there
   (with status locked/proposed/superseded) rather than letting it live only
   in chat history. Don't edit the vision doc's §3 table to track decisions.
+- **Before implementing any issue, read [docs/implementing.md](docs/implementing.md).**
+  It has the orientation, the fast iteration loop, the eight rules that
+  must survive any change, and the definition of done. Every open issue has
+  an *Implementation* section with files, functions, steps and a *Verify*
+  list; the closing comment must carry the measurements, not just "done".
 - Work is tracked in **GitHub issues** on `mjm3853/pets` (`gh issue list`).
   Labels: `now` / `next` / `later` for scheduling, `correctness` / `ingest` /
   `experience` / `perf` for kind. `correctness` means a silent-wrong-answer
