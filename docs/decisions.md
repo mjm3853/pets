@@ -795,3 +795,43 @@ affirmative must be a first-class control with its own key, not the absence
 of action. Silence is not consent and must never clear a queue item.
 
 **What would change it:** Nothing planned.
+
+---
+
+## D28 — A place is a rank and a key, never a coordinate or a lookup
+
+**Status:** locked · **Date:** 2026-09-13 · **Refines:** D13 · **See:** [security.md](security.md) §2, issue #11
+
+**Decision:** Places are clustered offline from the GPS already in the
+photos — a ~400 m grid, neighbouring populated cells joined, ranked by
+moments. No reverse geocoding, ever. The top cluster is labelled `Home`, the
+rest `Place 2`, `Place 3`…, and `pet.json` carries `places: {"<key>":
+"The lake"}` for real names. A place's key is a hash of its densest cell's
+centre coordinates; neither the key nor the coordinates reach a page.
+
+**Why:** Measured on the real archive. 1,039 moments carry GPS and **873 of
+them — 84% — fall in one cluster, which is the house the household lives
+in**; the runner-up has 11. Any naming service takes the coordinate before
+it gives back a name, so a single reverse-geocode call would hand a third
+party a home address, and a coordinate rendered into a page hands it to
+everyone the page is forwarded to. Rank naming costs nothing and the user
+supplies the two or three names they actually care about.
+
+The key is hashed rather than stored as `42.99,-71.41` because the key is the
+one part of a place that a page could plausibly need to carry, and a
+readable key is a home address wearing an identifier's clothes.
+
+The key comes from the **densest** cell, not the mean of the members: a mean
+drifts as photos land and can round into the neighbouring cell, silently
+issuing a new key and orphaning the user's name (D13). Verified by dropping
+152 media rows and re-ingesting — every one of the 16 clusters that survived
+kept its key, while five of them changed rank name. That is the split the
+design wants: names move, identity does not.
+
+**Also decided:** a place needs **three moments**. Below that it is a point
+on one drive, and 55 of the 88 raw clusters are single stops that would have
+rendered as "Place 63".
+
+**What would change it:** An offline place database shipped with the app
+(coastline, parks, town boundaries) could add a real name without a network
+call. That is additive — the key and the no-coordinate rule stay.

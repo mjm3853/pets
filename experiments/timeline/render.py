@@ -232,6 +232,18 @@ h2 { font-size:clamp(26px,3.4vw,38px); }
 .why { font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--faint);
   margin-top:10px; }
 
+/* places */
+.places { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  gap:18px; margin-top:34px; }
+.place { background:var(--raise); border:1px solid var(--rule); border-radius:6px;
+  overflow:hidden; }
+.place img { width:100%; aspect-ratio:4/3; object-fit:cover; display:block;
+  background:var(--rule); }
+.place .body { padding:14px 16px 16px; }
+.place h3 { font-size:23px; }
+.place .meta { font-family:"IBM Plex Mono",monospace; font-size:11.5px;
+  color:var(--faint); margin-top:7px; line-height:1.7; }
+
 /* index */
 .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
   gap:20px; margin-top:34px; }
@@ -485,6 +497,7 @@ function openBurst(fig) {{
   if (multi) bits.push('shot by ' + d.who.join(' and '));
   if (d.trunc) bits.push('showing first ' + (d.f.length + 1) + ' of ' + d.n);
   if (d.dev) bits.push(d.dev);
+  if (d.pl) bits.push(d.pl);
 
   const el = document.createElement('div');
   el.className = 'det';
@@ -749,6 +762,7 @@ def render_all(args) -> None:
                     covers[mid] = assets.wide(Path(m["hero_path"]), m["hero_box"], 560, 74)
     digests.save()
     order = list(d["source"]["rolls"])
+    place_names = {p["key"]: p["name"] for p in d.get("places", [])}
     # No burst frames on the index: reviewing "which animal is this" needs the
     # hero, not the whole run, and encoding 100+ extra bursts would double it.
     detail = {m["id"]: {
@@ -756,6 +770,7 @@ def render_all(args) -> None:
         "c": datetime.fromisoformat(m["started_at"]).strftime("%-I:%M %p").lower(),
         "n": m["media_count"], "sp": m["span_seconds"], "p": m["with_people"],
         "dev": m["device"] or "", "ht": 0, "f": [],
+        "pl": place_names.get(m.get("place"), ""),
         "hw": m.get("hero_by", ""), "who": m.get("contributors", []),
         "pets": [a["pet"] for a in m["appearances"]], "trunc": 0,
         "why": m.get("review_why", []),
@@ -852,6 +867,37 @@ def main():
         f'<figcaption>{pretty(m["date"])}<br>{today.year - int(m["date"][:4])} years ago</figcaption></figure>'
         for m in onthis if m["id"] in thumbs)
 
+    # ---- places: the names and counts only, never a coordinate (security.md §2)
+    place_names = {p["key"]: p["name"] for p in d.get("places", [])}
+    here = {}
+    for m in moments:
+        if m.get("place"):
+            here.setdefault(m["place"], []).append(m)
+    rows = []
+    for p in d.get("places", []):
+        mine = here.get(p["key"])
+        if not mine:
+            continue
+        top = max(mine, key=lambda m: m["hero_quality"])
+        src = assets.wide(Path(top["hero_path"]), top["hero_box"], 560, 74)
+        days = len({m["date"] for m in mine})
+        rows.append(
+            f'<div class="place"><img src="{src}" alt="{name} at {p["name"]}" loading="lazy">'
+            f'<div class="body"><h3>{p["name"]}</h3><p class="meta">'
+            f'{len(mine)} moment{"" if len(mine) == 1 else "s"} &middot; '
+            f'{days} day{"" if days == 1 else "s"}<br>'
+            f'{pretty(min(m["date"] for m in mine))} &ndash; '
+            f'{pretty(max(m["date"] for m in mine))}</p></div></div>')
+    places_section = f"""
+<section><div class="wrap">
+  <div class="shead"><h2>Places</h2>
+  <p class="eyebrow">{len(rows)} places</p></div>
+  <p class="lede">Grouped from the coordinates already in the photos, on this
+  laptop. Nothing was looked up online and no coordinate is in this page, so a
+  place here has a number until someone gives it a name.</p>
+  <div class="places">{"".join(rows)}</div>
+</div></section>""" if rows else ""
+
     # ---- chapters
     marks_by_era = {}
     for ms in block["milestones"]:
@@ -893,6 +939,7 @@ def main():
         "c": datetime.fromisoformat(m["started_at"]).strftime("%-I:%M %p").lower(),
         "n": m["media_count"], "sp": m["span_seconds"], "p": m["with_people"],
         "dev": m["device"] or "", "ht": offset(m), "f": bursts.get(m["id"], []),
+        "pl": place_names.get(m.get("place"), ""),
         "hw": m.get("hero_by", ""), "who": m.get("contributors", []),
         "pets": [a["pet"] for a in m.get("appearances", [])],
         "trunc": max(0, m["media_count"] - args.max_frames),
@@ -1123,6 +1170,8 @@ def main():
   A quiet stretch is the one record that can <em>shrink</em>, because a later
   import can land photos inside it.</p>
 </div></section>
+
+{places_section}
 
 {merge_section if not sparse else ""}
 

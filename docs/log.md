@@ -994,3 +994,45 @@ today, by me, in code that was tested and reviewed at the time. Four of the
 six are *the same bug class the project has already been bitten by three
 times* — and two are literally the same bug in a different branch or
 language. Speed does not stop producing this class; only a second pass does.
+
+## 2026-09-13 — Places, and where the archive actually is
+
+Issue #11. Clustered the GPS offline: ~400 m grid, neighbouring populated
+cells joined, ranked by moments.
+
+**1,039 of 1,550 moments carry GPS, and 873 of those — 84% — are one
+cluster.** That is the house. The runner-up has 11 moments, so the lead is
+80×, which is the only reason calling it `Home` is defensible under D15; the
+place record carries the runner-up anyway, and a close call stays a numbered
+place.
+
+The tail is long and thin: 88 raw clusters, 55 of them a single moment. A
+3-moment floor leaves **18 places**, which is a section someone will read.
+Below that a "place" is one stop on one drive, and naming it "Place 63" is
+worse than not naming it.
+
+**Looked at two away clusters before believing any of it.** Place 2 (11
+moments, 10 days, Mar 2022 – Jul 2025) is a lake: same granite shoreline,
+same pontoon at the same dock, four seasons including one photo of shore
+ice. Place 5 (8 moments, two days in Jul 2021) is one cabin: same pine
+panelling, same plaid bed, same window shade, same picnic table. Both are
+unambiguously single places. The grid did not need tuning.
+
+**Key stability, tested properly.** Dropped 152 media rows and re-ingested.
+All 16 clusters that stayed above the floor kept their key; **five of them
+changed rank name**. Two places at exactly 3 moments fell to 2 and dropped
+out with their keys intact. Names move, identity does not — which is the
+whole point of keying off the densest cell rather than the rank (D13, D28).
+
+**Surprise worth writing down.** One cluster in the perturbed run appeared
+at a location 1.6 km from where the same photos sat in the full run. Not a
+keying bug: a moment takes the GPS of its *first* frame with coordinates
+(`build_moments`), so when re-clustering splits a burst shot while walking,
+the moment's location moves to a different frame. Places built on moving
+bursts are approximate by construction. Not fixed here — filed as a thing
+to know before places carry any weight.
+
+**No coordinate is in any page.** `leakcheck.sh` clean on all five; `grep -c
+gps`, a grep for decimal coordinates, and a grep for place keys all zero.
+The key is a hash, not `42.99,-71.41`, and it stays out of the HTML
+entirely — the page gets a name and a count.

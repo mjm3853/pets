@@ -12,6 +12,7 @@ Usage:
 import argparse
 import hashlib
 import json
+import math
 import re
 from collections import Counter
 from datetime import datetime, timedelta
@@ -30,6 +31,12 @@ VIDEO_EXTS = {".mp4", ".mov"}
 BURST_GAP = timedelta(minutes=20)
 
 FILENAME_DATE = re.compile(r"(\d{8})[_-](\d{6})")
+
+# ~400 m of latitude: one house and its yard land in a cell, a house and the
+# park down the road do not.
+PLACE_GRID = 0.004
+# A place is somewhere you went back to. One stop on one drive is a point.
+PLACE_MIN = 3
 
 
 def parse_time(path: Path, exif: dict) -> tuple[str | None, str]:
@@ -577,6 +584,92 @@ def find_islands(moments: list[dict], pid: str, gap_days: int = 365) -> list[dic
             for g in groups]
 
 
+def place_key(lat: float, lon: float) -> str:
+    """Identity from where a cluster sits, never from its rank — the next import
+    reorders the list and a rename in pet.json has to survive that (D13).
+
+    Hashed rather than stored plainly because this key is the one part of a
+    place that a page could plausibly carry, and a key you can read backwards
+    is a home address (docs/security.md §2).
+    """
+    return "pc" + hashlib.sha256(f"{lat:.4f},{lon:.4f}".encode()).hexdigest()[:12]
+
+
+def build_places(moments: list[dict], named: dict[str, str]) -> list[dict]:
+    """Group moments by where they happened, without asking anyone where that is.
+
+    Snap to a grid, join populated neighbours, rank by moments. Deliberately no
+    reverse geocoding: every service that turns a coordinate into a name takes
+    the coordinate first, and the biggest cluster here is the house the
+    household lives in. So a place gets a rank name, `pet.json` carries the
+    real one, and the coordinates never leave this function.
+    """
+    cells: dict[tuple[int, int], list[dict]] = {}
+    for m in moments:
+        if m["gps"]:
+            cells.setdefault((math.floor(m["gps"][0] / PLACE_GRID),
+                              math.floor(m["gps"][1] / PLACE_GRID)), []).append(m)
+
+    groups, seen = [], set()
+    for c in sorted(cells):
+        if c in seen:
+            continue
+        stack, grp = [c], []
+        seen.add(c)
+        while stack:
+            k = stack.pop()
+            grp.append(k)
+            for da in (-1, 0, 1):
+                for db in (-1, 0, 1):
+                    n = (k[0] + da, k[1] + db)
+                    if n in cells and n not in seen:
+                        seen.add(n)
+                        stack.append(n)
+        groups.append(grp)
+
+    def size(g):
+        return sum(len(cells[k]) for k in g)
+
+    groups = sorted((g for g in groups if size(g) >= PLACE_MIN),
+                    key=lambda g: (-size(g), min(g)))
+    if not groups:
+        return []
+    # Calling the top cluster "Home" is an extremum, and D15 says an extremum
+    # needs its runner-up. Here the lead is 80× — but an archive shot mostly at
+    # a second house would be a coin flip, and then it stays a numbered place.
+    lead = superlative([size(g) for g in groups])
+
+    places = []
+    for rank, g in enumerate(groups, 1):
+        mine = sorted((m for k in g for m in cells[k]), key=lambda m: m["started_at"])
+        # The densest cell, not the mean of the members: a mean drifts as
+        # photos land and can round into the neighbouring cell, which would
+        # silently hand the place a new key and orphan its name.
+        anchor = max(g, key=lambda k: (len(cells[k]), k))
+        key = place_key((anchor[0] + 0.5) * PLACE_GRID, (anchor[1] + 0.5) * PLACE_GRID)
+        hero = max(mine, key=lambda m: m["hero_quality"])
+        for m in mine:
+            m["place"] = key
+        home = rank == 1 and not lead["provisional"]
+        places.append({
+            "key": key,
+            "name": named.get(key) or ("Home" if home else f"Place {rank}"),
+            "named": key in named,
+            "home": home,
+            "moments": len(mine),
+            "media": sum(m["media_count"] for m in mine),
+            "days": len({m["date"] for m in mine}),
+            "first": mine[0]["date"],
+            "last": mine[-1]["date"],
+            "contributors": sorted({c for m in mine for c in m["contributors"]}),
+            "hero": hero["hero"],
+            "hero_path": hero["hero_path"],
+            "hero_box": hero["hero_box"],
+            **(lead if rank == 1 else {}),
+        })
+    return places
+
+
 def build_merge_report(moments: list[dict], media: list[dict], rolls: list[str]) -> dict:
     """How much does each roll actually add? The D6 question, quantified."""
     pet = [m for m in moments if m["has_pet"] and m["dated"] and not m["before_anchor"]]
@@ -668,6 +761,7 @@ def main():
     profile = load_profile(conf, args.pet, args.species, args.anchor,
                            [w for w, _ in rolls], [w for w, _ in abouts])
     assign_appearances(moments, media, profile)
+    places = build_places(moments, profile.get("places", {}))
 
     owns = owned_by(profile)
     contributes = {slug(w) for w, _ in rolls}
@@ -714,6 +808,7 @@ def main():
 
     for m in moments:
         m.setdefault("before_anchor", False)
+        m.setdefault("place", None)
 
     pet_media = [m for m in media if m["pet"]]
     undated = [m for m in moments if not m["dated"]]
@@ -721,6 +816,7 @@ def main():
     unassigned = [m for m in moments if m["unassigned"]]
     doc = {
         "pets": pets,
+        "places": places,
         "source": {"rolls": {who: str(root) for who, root in rolls},
                    "about": {who: str(root) for who, root in abouts},
                    "media_files": len(media),
@@ -736,6 +832,8 @@ def main():
                   "unassigned_moments": len(unassigned),
                   "unassigned_media": sum(m["media_count"] for m in unassigned),
                   "needs_review_moments": sum(1 for m in moments if m["needs_review"]),
+                  "gps_moments": sum(1 for m in moments if m["gps"]),
+                  "placed_moments": sum(1 for m in moments if m["place"]),
                   "assigned_by": dict(Counter(
                       a["assigned_by"] for m in moments for a in m["appearances"]))},
         "moments": moments, "media": media,
@@ -773,6 +871,17 @@ def main():
     if s["unassigned_moments"]:
         print(f"  UNASSIGNED: {s['unassigned_moments']} moments "
               f"({s['unassigned_media']} files) — nobody said which pet")
+
+    if places:
+        print(f"\nPLACES — {len(places)} with {PLACE_MIN}+ moments, "
+              f"{s['placed_moments']}/{s['gps_moments']} located moments placed")
+        for pl in places[:8]:
+            flag = " (named)" if pl["named"] else ""
+            print(f"  {pl['name']:12s} {pl['moments']:5d} moments, {pl['days']:4d} days, "
+                  f"{pl['first']} to {pl['last']}  {pl['key']}{flag}")
+        if len(places) > 8:
+            print(f"  ...and {len(places) - 8} more")
+        print(f"  rename one by adding \"places\": {{\"<key>\": \"The lake\"}} to pet.json")
 
     if strays:
         print(f"\nBefore an anchor: {s['before_anchor_media']} files "
