@@ -353,3 +353,29 @@ protocol instead of code.
 The guide is the more important half. The rules section exists because
 every one of those rules was violated today by reasonable-looking code, and
 a capable model working fresh would violate several of them again.
+
+## 2026-09-13 — Prioritised, and drew the line on infrastructure
+
+Matt asked whether the issues were prioritised, whether it was time to turn
+this into a reusable product with auth, a database and deployment, or
+whether more local learning loops came first.
+
+The `next`/`later` labels were a tier, not an order. Replaced with three
+milestones by intent — **Learn**, **Household #2**, **Product** — with
+p1/p2/p3 inside each. The milestones are the argument: the three questions
+the vision hangs on (feed, recap, permission) are cheap and unanswered; the
+thing that breaks n=1 is a second household, which needs Takeout and a
+one-command setup and no server at all; and everything infrastructural is
+gated behind those.
+
+Wrote the auth, data-location, deployment and threat-model stories anyway
+(#23–#27), because the thinking is cheap and it stops someone building them
+early. The honest content of each: authorisation is already solved by the
+`access` model, so auth is just proving you are a person and a magic link
+is enough; SQLite until it hurts; try a shared folder between two
+households before writing a server; nothing on a server ever holds an
+original. The threat model is the one that is *not* premature — 97% of
+files carry home coordinates, and it should be written before the first byte
+leaves the laptop.
+
+Proposed D20 as the go/stop criterion. Matt's version wins.

@@ -448,3 +448,41 @@ boundary — `access` edges are.
 
 **What would change it:** Nothing planned. This is the shape D5 was
 protecting room for.
+
+---
+
+## D20 — What "done with the proof of concept" means
+
+**Status:** proposed · **Date:** 2026-09-13 · **See:** issue #21, milestones 1–3
+
+**Decision (proposed):** Work runs in three milestones, and the third does
+not start until the first two say go.
+
+**Milestone 1, Learn** — answer the three questions the vision hangs on, all
+cheap and local: will they keep opening a feed after two weeks (#16); would
+either of them send a generated recap to someone outside the house (#15);
+will strangers grant full photo access (#17).
+
+**Milestone 2, Household #2** — make it runnable by someone who is not us.
+Takeout import (#18), one-command setup (#23), a threat model before any
+data leaves the founders' laptop (#24). The friend with the merle dog is the
+first outside user. This is what breaks n=1.
+
+**Milestone 3, Product** — identity (#25), where data lives (#26),
+deployment (#27), the multi-pet model (#22), ownership (#20). Every one is
+gated on the first two.
+
+**Go** means all three of: the feed is still being opened at two weeks; at
+least one recap was actually sent; household #2 ran it and reacted the way
+Matt and Renee did. **Stay personal** is the outcome if any fail — a tool
+two people keep using is a success by the vision's own definition of indie
+(D1). Either way, the answer gets written here.
+
+**Why:** Nineteen commits and a working timeline in a day is exactly the
+pace at which a demo drifts into a build without anyone deciding to. The
+infrastructure questions — auth, database, deployment — are real and are
+now written up, and every one of them is premature until someone outside the
+house has used the thing.
+
+**What would change it:** Matt's version of the criterion. This is his call;
+the proposal is a starting point.
