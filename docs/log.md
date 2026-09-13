@@ -432,3 +432,41 @@ Oakley is ingested with `--about`. Baseline expectation: Izzy loses exactly
 
 Housekeeping: Renee's 12 GB zip is still in `pics/` and is fully extracted;
 Oakley's zip is not yet extracted.
+
+## 2026-09-13 — Ray, and the albums we mistook for rolls
+
+Second friend's dog: Ray, 88 files, six camera models, 2012–2026. Matt
+warned there would be Izzy in it.
+
+The device survey answered a question nobody had asked. **51 of Ray's 84
+photos and 125 of Oakley's 138 were taken on Matt's and Renee's own
+Pixels** — yet only 8 and 53 of those appear in the Izzy exports. Photos of
+other dogs, from the same phones, were never in the Izzy folders. Add ~400
+files a year at a 90% dog rate, which no camera roll produces, and both
+"rolls" were albums: Google Photos had already sorted by subject before we
+saw anything.
+
+That reframes the day. 90% detection, 0.05% contamination, single-pet
+inference being right almost always — all measured on platform-curated
+input. The vision's capture-inversion thesis is untested on a raw roll, and
+D21's one automatic inference is exactly what a raw roll would break.
+Filed #32 to measure it, and proposed D22: the input is the platform's pet
+album, and the platform did the recognition we chose not to build. That is
+a cleaner product story than the vision's, not a worse one — but it should
+be a decision, not an accident.
+
+Three smaller corrections from Ray, folded into #22. Friends' pets are
+always the sparse view: Ray has a real 2015–2017 period on the owner's old
+Motorola and Nexus, then a five-year hole, and year-chapters would emit six
+empty ones. Eras only for a contributor's own primary pet. Device is a hint
+and never a contributor — Matt and Renee may both own a Pixel 8. And
+friends' folders are worse on metadata: 15% of Ray's files are undated
+against 3.7% of Izzy's, and there is a `.gif` the scripts silently drop.
+
+Ray's owner's own photos — the Samsung from 2012, the Motorola, the Nexus —
+are 33 files Matt never had, and the 51 from Matt's phones are ones the
+owner has never seen. Cross-household contribution, both directions,
+already sitting in one folder.
+
+Expected when Ray is ingested with `--about`: Izzy loses exactly 6
+moments, all pure. Both zips are extracted; nothing ingested yet.

@@ -286,6 +286,17 @@ first-class state rendered in its own strip, never hidden, never defaulted.
 Mixed bursts — some frames user-assigned to one pet, the rest inferred as
 another — are the one automatic multi-pet case, and they are the playdate.
 
+**Eras only for a contributor's own pet.** Ray has a real early period and
+then a five-year hole; year-chapters would emit six empty ones. A friend's
+pet never gets an anchor guessed for it — no owner is here to confirm one
+(D21). Sparse view, `first_seen`, `last_seen`, and that is all.
+
+**And a caveat on everything above this section.** Every input so far was
+a platform-curated pet album, not a camera roll — 51 of Ray's and 125 of
+Oakley's photos were on Matt's and Renee's phones and absent from the Izzy
+exports. The detection and contamination figures describe album input. See
+D22 and issue #32.
+
 **Zero required metadata.** A pet needs a name. Species, anchor, adoption
 date, dogsitting windows are all optional and all fillable later. People do
 not look up dates, and a product that needs them to will not get them.

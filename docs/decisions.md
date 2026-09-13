@@ -520,3 +520,37 @@ second pet, stop and make it a *suggestion* in the unassigned strip instead
 **What would change it:** Manual-fix counts from #28 being so high that
 multi-pet is unusable — which would argue for recognition (revisiting D17),
 not for more inference.
+
+---
+
+## D22 — The input is the platform's pet album, not the raw camera roll
+
+**Status:** proposed · **Date:** 2026-09-13 · **Refines:** D7, D17, D21 · **See:** issue #32
+
+**Decision (proposed):** What a person hands the product is the pet album
+their phone already made — Google Photos' or Apple's own pet grouping — not
+their entire camera roll. The platform does the first cut, which is the
+recognition we decided not to build (D17). We do what the platform does not:
+merge across people, and tell the story.
+
+**Why:** Every input so far was already an album. 51 of Ray's 84 photos and
+125 of Oakley's 138 were taken on Matt's and Renee's phones, yet only 8 and
+53 appear in the "Izzy" exports — the platform had already sorted by
+subject. So the numbers the project rests on (90% detection, 0.05%
+contamination, single-pet inference being right almost always) describe
+album input, and the vision's "connect the camera roll" thesis is untested
+on a roll. On a raw roll, D21's one automatic inference is the assumption
+most likely to break.
+
+**What this changes:** The ask at onboarding becomes "share your pet's
+album" rather than "give us full library access" — a smaller, more
+comprehensible permission, and one the platforms already expose as an
+export or a shared album. It weakens the vision's §7 platform-risk worry in
+one direction (we are downstream of the platform, not competing with its
+recognition) and sharpens it in another (we depend on that grouping
+existing and being exportable). The cross-person merge, the narrative, the
+feed and the artifacts are unaffected: none of them needed a raw roll.
+
+**What would change it:** #32 showing a raw roll is clean enough that the
+distinction does not matter — or showing the platform's album cannot be
+exported with enough fidelity to be the input.
