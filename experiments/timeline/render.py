@@ -522,6 +522,9 @@ def main():
                 f'<div class="hlegend"><span>quieter</span>'
                 f'{"".join(f"<span class=%r></span>" % f"hc l{i}" for i in range(5))}'
                 f'<span>busier &mdash; click a day to find it below</span></div>')
+        if (datetime.fromisoformat(e["end"])
+                - datetime.fromisoformat(e["start"])).days < 21:
+            heat = ""
 
         sheet = "".join(cell(m, thumbs[m["id"]], name, order)
                         for m in inside if m["id"] in thumbs)
@@ -535,9 +538,9 @@ def main():
   <div class="chead">
     <div class="hero"><img src="{hero}" alt="{name}, {e['label']}" loading="lazy"></div>
     <div class="cmeta">
-      <p class="eyebrow">Chapter {e['index'] + 1}</p>
+      <p class="eyebrow">{e['eyebrow']}</p>
       <h3>{e['label']}</h3>
-      <p class="cdates">{pretty(e['start'])} &ndash; {pretty(e['end'])}</p>
+      <p class="cdates">{pretty(e['start']) if e['start'] == e['end'] else pretty(e['start']) + " &ndash; " + pretty(e['end'])}</p>
       <ul class="cstats">
         <li><span>Moments</span><b>{e['moments']}</b></li>
         <li><span>Photos kept</span><b>{e['media']}</b></li>

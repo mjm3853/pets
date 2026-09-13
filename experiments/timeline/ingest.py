@@ -248,6 +248,22 @@ def build_eras(moments: list[dict], start: datetime) -> list[dict]:
     if not pet:
         return []
     eras = []
+    # A user-given anchor is the day the pet came home, which can be later than
+    # the first photo — meeting them at the shelter, foster or breeder photos.
+    # Those predate every chapter and would otherwise fall out of the timeline
+    # entirely, so they get a prologue. A derived anchor never produces one,
+    # since it is the first photo by construction.
+    before = [m for m in pet if datetime.fromisoformat(m["started_at"]) < start]
+    if before:
+        eras.append({
+            "id": "e_pre", "index": None, "label": "Before she came home",
+            "eyebrow": "Prologue",
+            "start": before[0]["date"], "end": before[-1]["date"],
+            "moments": len(before),
+            "media": sum(m["media_count"] for m in before),
+            "with_people": sum(1 for m in before if m["with_people"]),
+            "hero": max(before, key=lambda m: m["hero_quality"])["hero"],
+        })
     for yr in range(20):
         lo = start.replace(year=start.year + yr)
         hi = start.replace(year=start.year + yr + 1)
@@ -260,6 +276,7 @@ def build_eras(moments: list[dict], start: datetime) -> list[dict]:
             "id": f"e{yr:02d}",
             "index": yr,
             "label": "First year" if yr == 0 else f"Year {yr + 1}",
+            "eyebrow": f"Chapter {yr + 1}",
             "start": chunk[0]["date"],
             "end": chunk[-1]["date"],
             "moments": len(chunk),
@@ -368,7 +385,7 @@ def main():
                     help="re-run detection even when cached; still writes results")
     ap.add_argument("--anchor", metavar="YYYY-MM-DD",
                     help="the real adoption or birth date; outranks the derived "
-                         "anchor and is never moved by a backfill")
+                         "anchor, persists to pet.json, and is never moved by a backfill")
     args = ap.parse_args()
 
     if args.rebuild:
@@ -399,9 +416,19 @@ def main():
                           digests, cache, firsts, now, not args.no_cache)
         digests.save()
     moments = build_moments(media)
+    # A given anchor is a fact the user owns, so it is remembered rather than
+    # re-asked, and no import can move it. The derived one stays as the
+    # fallback and as the reference for spotting strays.
+    conf = Path(__file__).resolve().parent / "pet.json"
+    given = args.anchor
+    if given:
+        conf.write_text(json.dumps({"anchor": given}, indent=1))
+    elif conf.exists():
+        given = json.loads(conf.read_text()).get("anchor")
+
     _pet = [m for m in moments if m["has_pet"] and m["dated"]]
     derived = find_anchor(_pet) if _pet else None
-    anchor = datetime.fromisoformat(args.anchor) if args.anchor else derived
+    anchor = datetime.fromisoformat(given) if given else derived
     for m in moments:
         m["before_anchor"] = bool(
             derived and datetime.fromisoformat(m["started_at"]) < derived)
@@ -430,7 +457,7 @@ def main():
                   "before_anchor_moments": len(strays),
                   "before_anchor_media": sum(m["media_count"] for m in strays),
                   "anchor": anchor.date().isoformat() if anchor else None,
-                  "anchor_source": "given" if args.anchor else "derived",
+                  "anchor_source": "given" if given else "derived",
                   "anchor_derived": derived.date().isoformat() if derived else None},
         "eras": eras, "milestones": milestones, "moments": moments, "media": media,
     }
