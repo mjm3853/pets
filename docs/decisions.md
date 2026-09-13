@@ -490,3 +490,33 @@ house has used the thing.
 
 **What would change it:** Matt's version of the criterion. This is his call;
 the proposal is a starting point.
+
+---
+
+## D21 — Guess fewer times than needed: unassigned beats wrong
+
+**Status:** locked · **Date:** 2026-09-13 · **Refines:** D11, D16, D17, D19 · **See:** issues #22, #30, #31
+
+**Decision:** Automatic assignment of a moment to a pet happens in exactly
+one case — a contributor's single primary pet, the one they have `owner`
+access to and nothing else. No secondary pet is ever inferred. Every other
+assignment comes from a person: a subject folder (`--about`), a manual
+choice (#30), or a dated `caretaker` window. Ambiguity resolves to
+**unassigned**, which is a first-class, visible state. A pet needs only a
+name; no date or species is ever required to ingest.
+
+**Why:** Matt, verbatim: "most people don't want to remember certain things
+off the top of their heads or look up dates and times … educated guesses
+could be made but better to guess fewer times than needed." And the data
+agreed the same afternoon: a curated folder of a friend's dog showed that
+27 of Izzy's moments were that dog, 18 entirely, with no signal anywhere
+that they were wrong. A wrong assignment in a memory product is silent; an
+unassigned one is a strip someone can clear in a minute.
+
+**How to apply:** If you find yourself writing a heuristic that assigns a
+second pet, stop and make it a *suggestion* in the unassigned strip instead
+(#31). If you find yourself adding a required field to onboarding, stop.
+
+**What would change it:** Manual-fix counts from #28 being so high that
+multi-pet is unusable — which would argue for recognition (revisiting D17),
+not for more inference.

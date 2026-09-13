@@ -403,3 +403,32 @@ If it is large, D17 gets revisited with evidence rather than guesswork.
 
 D20's go criterion changed to match: three friends see their dog's timeline
 and react; the strongest signal is one who sends more photos unasked.
+
+## 2026-09-13 — Oakley
+
+Matt added a folder of the merle dog, Oakley: 138 files, 2019–2026, 88 of
+them in 2022. Fragments, not a life — exactly what he said most pets will
+look like in most people's archives.
+
+Two things fell out before any code. **53 of the 138 are Matt's own photos**,
+so the folder is *about* Oakley rather than *from* a contributor, and that
+is how people will actually hand photos over. And against the current
+single-pet timeline, **27 of Izzy's 1,378 moments contain Oakley-folder
+files: 18 are entirely Oakley, 9 are both dogs.** A 2% misassignment rate,
+forty times the stray rate, and nothing in the data could have shown it
+without a human curating a folder. Checked the two 2019 strays against the
+folder: neither is Oakley, so D16 stands.
+
+Matt's rule — guess fewer times than needed — became D21, and it overrode
+my first design for #22, which had "the contributor's own pet" as a default
+prior. That prior is now used for exactly one case (a single primary pet)
+and nothing else is ever inferred. Ambiguity goes to an unassigned strip.
+No date or species is required to ingest anything. #22 rewritten; #30
+(quick reassign) and #31 (playdate suggestions, never assignments) filed.
+
+The number that matters next is manual fixes per hundred photos once
+Oakley is ingested with `--about`. Baseline expectation: Izzy loses exactly
+18 moments, 9 become both, Oakley gets no eras.
+
+Housekeeping: Renee's 12 GB zip is still in `pics/` and is fully extracted;
+Oakley's zip is not yet extracted.

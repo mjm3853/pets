@@ -255,3 +255,37 @@ reason to keep the single-pet path exactly as fast as it is today.
 People *in* moments as identities. The detector counts persons; it does not
 say who. "With her people" stays a count. Face recognition is a different
 product with a different privacy posture, and a decision for another day.
+
+### Revised after Oakley: sparse pets, subject folders, guess fewer
+
+A friend's dog arrived as a folder of 138 files before the model existed,
+and settled three questions with data rather than argument.
+
+**Sparse pets.** Oakley is 138 files across seven years, 88 of them in one
+year and then a trickle. There is no sustained period to anchor on and no
+"life" to chapter. Most pets in most people's archives look like this — a
+friend's dog, a parent's cat, a dog that was dogsat twice. The model must
+hold a pet that has **only appearances**: no anchor, no eras, no milestones,
+just the moments it is in, in order. A timeline is earned by data, not
+assumed by the schema. `find_anchor()` failing to find a run is the signal.
+
+**Subject folders.** 53 of Oakley's 138 files are Matt's own photos, pulled
+out by subject. The folder is *about* a pet, not *from* a person. That is
+how most people will hand photos over — "here are pics of my dog" — and it
+is also **the assignment**: every file in it is `assigned_by: user` for that
+pet, with the contributor recovered from filename overlap with known rolls
+or left `unknown`. Ingest takes `--about NAME=PATH` alongside `--roll`.
+
+**Guess fewer times than needed (D21).** The single-pet inference that gets
+Izzy right 99.95% of the time is wrong the moment a second dog exists: 27
+of her 1,378 moments contain Oakley, 18 entirely, 9 both dogs — 2%, forty
+times the stray rate, invisible until a human curated a folder. So
+inference is used for exactly one case, a contributor's single primary pet.
+No secondary pet is ever inferred. Ambiguity resolves to **unassigned**, a
+first-class state rendered in its own strip, never hidden, never defaulted.
+Mixed bursts — some frames user-assigned to one pet, the rest inferred as
+another — are the one automatic multi-pet case, and they are the playdate.
+
+**Zero required metadata.** A pet needs a name. Species, anchor, adoption
+date, dogsitting windows are all optional and all fillable later. People do
+not look up dates, and a product that needs them to will not get them.
