@@ -647,7 +647,8 @@ def nav(pets: list[dict], here: str | None) -> str:
     def link(href, label, current):
         mark = ' aria-current="page"' if current else ""
         return f'<a href="{href}"{mark}>{label}</a>'
-    bits = [link("index.html", "All pets", here is None)]
+    bits = [link("feed.html", "Today", False),
+            link("index.html", "All pets", here is None)]
     bits += [link(f'{p["id"]}.html', p["name"], p["id"] == here) for p in pets]
     bits.append('<span class="sep"></span>')
     bits.append(link("index.html#covers", "Covers", False))
