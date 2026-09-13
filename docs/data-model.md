@@ -58,6 +58,13 @@ The narrative unit. Burst-clustered media.
 Key fields: `started_at`/`ended_at`, `media_count`, `has_pet`, `with_people`,
 `dated`, `gps`, `hero`, `hero_box`, `files[]`.
 
+**Burst length is the best available proxy for importance.** Nobody rates
+their photos, but they do keep shooting when something matters — 324 moments
+in this archive are a single frame, while the top ones run to 31. That is
+behavioural evidence, free of user effort, and it is strong enough to drive
+visual hierarchy: sizing contact-sheet cells by frame count makes the
+important moments findable at a glance without anyone marking a favourite.
+
 **Hero selection matters more than it sounds.** Scoring by confidence alone
 picks tight crops of a distant dog. `score × √(box area)` picks frames where
 the animal is both confidently detected and actually fills the frame. Since
@@ -125,5 +132,9 @@ still needs a second person's roll.
   travels. Clustering coordinates into named places is unbuilt and looks
   cheap.
 - **Video.** 12 files, currently carried but not analyzed.
+- **Sub-moment structure.** A burst is currently a flat list. Expanding one
+  reveals the sequence — the retries, the seconds between frames, the one
+  that worked — which is a layer of story the platforms discard. Worth
+  modelling explicitly if it earns its keep.
 - **Ownership and custody.** The unresolved question flagged in D6: what
   happens to a contributor's moments when they leave.

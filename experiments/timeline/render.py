@@ -14,7 +14,7 @@ import base64
 import io
 import json
 from collections import Counter
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from PIL import Image, ImageOps
@@ -112,9 +112,62 @@ h2 { font-size:clamp(26px,3.4vw,38px); }
   padding:9px 0; border-bottom:1px solid var(--rule); font-size:14px; color:var(--soft); }
 .cstats b { color:var(--ink); font-weight:600; font-family:"IBM Plex Mono",monospace;
   font-variant-numeric:tabular-nums; }
+/* day heatmap */
+.heat { margin-top:30px; overflow-x:auto; padding-bottom:4px; }
+.heatgrid { display:grid; grid-auto-flow:column; grid-template-rows:repeat(7,11px);
+  gap:3px; width:max-content; }
+.hc { display:inline-block; width:11px; height:11px; border-radius:2px; background:var(--rule);
+  border:0; padding:0; cursor:default; }
+.hc.pad { background:transparent; }
+.hc.l1 { background:var(--accent); opacity:.28; }
+.hc.l2 { background:var(--accent); opacity:.48; }
+.hc.l3 { background:var(--accent); opacity:.72; }
+.hc.l4 { background:var(--accent); opacity:1; }
+.hc.l1,.hc.l2,.hc.l3,.hc.l4 { cursor:pointer; }
+.hc:focus-visible, .sheet figure:focus-visible { outline:2px solid var(--accent);
+  outline-offset:2px; }
+.hmonths { display:grid; grid-auto-flow:column; gap:3px; width:max-content;
+  margin-bottom:6px; font-family:"IBM Plex Mono",monospace; font-size:10.5px;
+  color:var(--faint); }
+.hlegend { display:flex; align-items:center; gap:7px; margin-top:12px;
+  font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--faint); }
+.hlegend .hc { cursor:default; }
+
+/* contact sheet */
 .sheet { display:grid; grid-template-columns:repeat(auto-fill,minmax(84px,1fr));
-  gap:5px; margin-top:34px; }
-.sheet img { aspect-ratio:1; object-fit:cover; border-radius:2px; }
+  grid-auto-flow:row dense; gap:5px; margin-top:30px; }
+.sheet figure { margin:0; position:relative; cursor:zoom-in; border:0; padding:0;
+  background:none; border-radius:2px; }
+.sheet figure.s2 { grid-column:span 2; grid-row:span 2; }
+.sheet figure.s3 { grid-column:span 3; grid-row:span 3; }
+.sheet img { aspect-ratio:1; object-fit:cover; border-radius:2px; width:100%;
+  height:100%; display:block; }
+.sheet figure.open img { outline:2px solid var(--accent); outline-offset:1px; }
+.sheet figure.flash img { animation:flash 1.5s ease-out; }
+@keyframes flash { 0%,40% { outline:3px solid var(--accent); outline-offset:2px; }
+  100% { outline:3px solid transparent; outline-offset:2px; } }
+.badge { position:absolute; right:3px; bottom:3px; font-family:"IBM Plex Mono",monospace;
+  font-size:9.5px; line-height:1; padding:2.5px 4px; border-radius:3px;
+  background:rgba(0,0,0,.62); color:#fff; letter-spacing:.02em; pointer-events:none; }
+.sheet figure.s2 .badge, .sheet figure.s3 .badge { font-size:11px; padding:3.5px 6px; }
+
+/* expanded burst */
+.det { grid-column:1/-1; background:var(--raise); border:1px solid var(--rule);
+  border-radius:5px; padding:20px 20px 16px; margin:5px 0; }
+.dethead { display:flex; justify-content:space-between; align-items:baseline;
+  gap:18px; flex-wrap:wrap; margin-bottom:4px; }
+.dethead h4 { margin:0; font-family:Fraunces,Georgia,serif; font-size:20px; font-weight:600; }
+.detsub { font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--soft); }
+.detsub b { color:var(--accent); font-weight:500; }
+.detclose { border:1px solid var(--rule); background:none; color:var(--soft);
+  font:inherit; font-size:12px; border-radius:999px; padding:4px 12px; cursor:pointer; }
+.detclose:hover { color:var(--ink); border-color:var(--soft); }
+.frames { display:flex; gap:7px; overflow-x:auto; padding:14px 0 6px; }
+.frames figure { margin:0; flex:0 0 132px; cursor:default; }
+.frames img { width:132px; height:132px; object-fit:cover; border-radius:3px; display:block; }
+.frames figcaption { font-family:"IBM Plex Mono",monospace; font-size:10.5px;
+  color:var(--faint); margin-top:5px; }
+.frames .hero figcaption { color:var(--accent); }
 .marks { display:flex; flex-wrap:wrap; gap:8px; margin-top:26px; }
 .mark { font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--soft);
   border:1px solid var(--rule); border-radius:999px; padding:5px 12px; background:var(--raise); }
@@ -184,6 +237,18 @@ def pretty(d: str) -> str:
     return datetime.fromisoformat(d).strftime("%b %-d, %Y")
 
 
+def cell(m: dict, src: str, name: str) -> str:
+    """One contact-sheet cell. Size encodes how hard the moment was shot."""
+    n = m["media_count"]
+    size = "s3" if n >= 12 else "s2" if n >= 6 else ""
+    badge = f'<span class="badge">{n}</span>' if n > 1 else ""
+    label = f'{pretty(m["date"])}, {n} frame{"" if n == 1 else "s"}'
+    return (f'<figure class="{size}" data-m="{m["id"]}" data-date="{m["date"]}" '
+            f'tabindex="0" role="button" aria-label="{label}" title="{label}">'
+            f'<img src="{src}" alt="{name}, {pretty(m["date"])}" loading="lazy">'
+            f'{badge}</figure>')
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", type=Path, default=Path("moments.json"))
@@ -191,6 +256,8 @@ def main():
     ap.add_argument("--out", type=Path, default=Path("timeline.html"))
     ap.add_argument("--thumb", type=int, default=200)
     ap.add_argument("--quality", type=int, default=68)
+    ap.add_argument("--frame", type=int, default=152, help="burst frame size")
+    ap.add_argument("--frame-quality", type=int, default=64)
     args = ap.parse_args()
 
     d = json.loads(args.data.read_text())
@@ -248,16 +315,79 @@ def main():
                 marks_by_era.setdefault(e["id"], []).append(ms)
                 break
 
+    # ---- burst frames: every non-hero frame in a multi-frame moment
+    by_name = {x["file"]: x for x in d["media"]}
+    todo = [(m, f) for m in moments if m["media_count"] > 1
+            for f in m["files"] if f != m["hero"]]
+    print(f"Encoding {len(todo)} burst frames at {args.frame}px")
+    bursts = {}
+    for i, (m, fname) in enumerate(todo, 1):
+        if i % 200 == 0:
+            print(f"  {i}/{len(todo)}")
+        row = by_name.get(fname, {})
+        try:
+            src = crop(args.photos / fname, row.get("box"), args.frame, args.frame_quality)
+        except Exception:
+            continue
+        off = int((datetime.fromisoformat(row["taken_at"])
+                   - datetime.fromisoformat(m["started_at"])).total_seconds())
+        bursts.setdefault(m["id"], []).append(
+            {"s": src, "t": off, "k": row.get("kind", "photo")})
+
+    def offset(m):
+        return int((datetime.fromisoformat(
+            by_name[m["hero"]]["taken_at"]) - datetime.fromisoformat(m["started_at"])
+        ).total_seconds()) if m["hero"] in by_name else 0
+
+    detail = {m["id"]: {
+        "d": datetime.fromisoformat(m["started_at"]).strftime("%A, %B %-d, %Y"),
+        "c": datetime.fromisoformat(m["started_at"]).strftime("%-I:%M %p").lower(),
+        "n": m["media_count"], "sp": m["span_seconds"], "p": m["with_people"],
+        "dev": m["device"] or "", "ht": offset(m), "f": bursts.get(m["id"], []),
+    } for m in moments}
+
     print("Encoding chapter heroes")
     chapters = []
     for e in d["eras"]:
         hero_m = next((m for m in moments if m["hero"] == e["hero"]), None)
         hero = wide(args.photos / e["hero"], hero_m["hero_box"] if hero_m else None, 1300, 80)
         inside = [m for m in moments if e["start"] <= m["date"] <= e["end"]]
-        sheet = "".join(
-            f'<img src="{thumbs[m["id"]]}" alt="{name}, {pretty(m["date"])}" '
-            f'title="{pretty(m["date"])}" loading="lazy">'
-            for m in inside if m["id"] in thumbs)
+
+        # day heatmap, one column per week, Sunday at the top
+        per_day = Counter()
+        for m in inside:
+            per_day[m["date"]] += m["media_count"]
+        counts = sorted(per_day.values())
+        lo = datetime.fromisoformat(e["start"]).date()
+        hi = datetime.fromisoformat(e["end"]).date()
+        lo -= timedelta(days=(lo.weekday() + 1) % 7)
+        steps = [counts[int(len(counts) * q)] for q in (.5, .78, .93)] if counts else [1, 2, 3]
+        cells, labels, day, week = [], [], lo, 0
+        while day <= hi:
+            n = per_day.get(day.isoformat(), 0)
+            lvl = 0 if not n else 1 + sum(n > s for s in steps)
+            inside_era = datetime.fromisoformat(e["start"]).date() <= day <= hi
+            if not inside_era and n == 0:
+                cells.append('<div class="hc pad"></div>')
+            else:
+                cells.append(
+                    f'<button class="hc l{lvl}" data-date="{day.isoformat()}" '
+                    f'aria-label="{day.strftime("%b %-d, %Y")}: {n} photo{"" if n == 1 else "s"}" '
+                    f'title="{day.strftime("%b %-d, %Y")} · {n} photo{"" if n == 1 else "s"}"></button>')
+            if day.weekday() == 5:  # Saturday closes a column
+                labels.append(day.strftime("%b") if day.day <= 7 else "")
+                week += 1
+            day += timedelta(days=1)
+        while len(labels) < week + 1:
+            labels.append("")
+        heat = (f'<div class="heat"><div class="hmonths">'
+                f'{"".join(f"<span>{l}</span>" for l in labels)}</div>'
+                f'<div class="heatgrid">{"".join(cells)}</div></div>'
+                f'<div class="hlegend"><span>quieter</span>'
+                f'{"".join(f"<span class=%r></span>" % f"hc l{i}" for i in range(5))}'
+                f'<span>busier &mdash; click a day to find it below</span></div>')
+
+        sheet = "".join(cell(m, thumbs[m["id"]], name) for m in inside if m["id"] in thumbs)
         marks = "".join(
             f'<span class="mark"><b>{ms["label"]}</b> · {pretty(ms["date"])}</span>'
             for ms in marks_by_era.get(e["id"], []))
@@ -278,6 +408,7 @@ def main():
       </ul>
     </div>
   </div>
+  {heat}
   {f'<div class="marks">{marks}</div>' if marks else ''}
   <div class="sheet">{sheet}</div>
 </div></article>""")
@@ -359,13 +490,93 @@ def main():
 <footer><div class="wrap tight">
   Built from {src['media_files']:,} files with an off-the-shelf detector. Every thumbnail is
   cropped to the detected animal, which is why the contact sheets are centred on {name}.
+  Cell size is burst length &mdash; how many frames were taken before moving on.
 </div></footer>
+
+<script>
+const M = {json.dumps(detail, separators=(',', ':'))};
+const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+
+function dur(s) {{
+  if (s < 60) return plural(s, 'second');
+  const m = Math.round(s / 60);
+  return m < 60 ? plural(m, 'minute') : plural(Math.round(m / 60), 'hour');
+}}
+
+function closeBurst() {{
+  document.querySelectorAll('.det').forEach(d => d.remove());
+  document.querySelectorAll('.sheet figure.open').forEach(f => f.classList.remove('open'));
+}}
+
+function openBurst(fig) {{
+  const was = fig.classList.contains('open');
+  closeBurst();
+  if (was) return;
+  const d = M[fig.dataset.m];
+  if (!d) return;
+  fig.classList.add('open');
+
+  const frames = d.f.map(f => ({{ src: f.s, t: f.t, hero: false }}));
+  frames.push({{ src: fig.querySelector('img').src, t: d.ht, hero: true }});
+  frames.sort((a, b) => a.t - b.t);
+
+  const strip = frames.map(f => {{
+    const off = f.t === 0 ? 'start' : '+' + dur(f.t);
+    return '<figure class="' + (f.hero ? 'hero' : '') + '">'
+      + '<img src="' + f.src + '" alt="" loading="lazy">'
+      + '<figcaption>' + off + (f.hero ? ' &middot; pick' : '') + '</figcaption></figure>';
+  }}).join('');
+
+  const bits = [plural(d.n, 'frame')];
+  if (d.n > 1 && d.sp > 0) bits.push('over ' + dur(d.sp));
+  if (d.p) bits.push('with a person in frame');
+  if (d.dev) bits.push(d.dev);
+
+  const el = document.createElement('div');
+  el.className = 'det';
+  el.innerHTML = '<div class="dethead"><div><h4>' + d.d + '</h4>'
+    + '<p class="detsub">' + d.c + ' &middot; <b>' + bits[0] + '</b>'
+    + (bits.length > 1 ? ' &middot; ' + bits.slice(1).join(' &middot; ') : '') + '</p></div>'
+    + '<button class="detclose" type="button">Close</button></div>'
+    + '<div class="frames">' + strip + '</div>';
+  el.querySelector('.detclose').addEventListener('click', closeBurst);
+  fig.after(el);
+  el.scrollIntoView({{ block: 'nearest', behavior: 'smooth' }});
+}}
+
+document.querySelectorAll('.sheet').forEach(sheet => {{
+  sheet.addEventListener('click', e => {{
+    const fig = e.target.closest('.sheet > figure');
+    if (fig) openBurst(fig);
+  }});
+  sheet.addEventListener('keydown', e => {{
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const fig = e.target.closest('.sheet > figure');
+    if (fig) {{ e.preventDefault(); openBurst(fig); }}
+  }});
+}});
+
+document.querySelectorAll('.hc[data-date]').forEach(btn => {{
+  btn.addEventListener('click', () => {{
+    const hit = document.querySelector('.sheet figure[data-date="' + btn.dataset.date + '"]');
+    if (!hit) return;
+    hit.scrollIntoView({{ block: 'center', behavior: 'smooth' }});
+    hit.classList.remove('flash');
+    void hit.offsetWidth;
+    hit.classList.add('flash');
+  }});
+}});
+
+document.addEventListener('keydown', e => {{ if (e.key === 'Escape') closeBurst(); }});
+</script>
 """
     args.out.write_text(html)
     mb = len(html.encode()) / 1e6
-    print(f"\nWrote {args.out} — {mb:.1f} MB, {len(thumbs)} thumbnails, {len(chapters)} chapters")
-    if mb > 15:
-        print("WARNING: over the 16MB artifact limit; lower --thumb or --quality")
+    nframes = sum(len(v) for v in bursts.values())
+    print(f"\nWrote {args.out} — {mb:.1f} MB")
+    print(f"  {len(thumbs)} moment thumbnails, {nframes} burst frames, {len(chapters)} chapters")
+    if mb > 26:
+        print("WARNING: very large for a single file; lower --frame or --thumb")
 
 
 if __name__ == "__main__":
