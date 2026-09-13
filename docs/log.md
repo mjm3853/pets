@@ -470,3 +470,26 @@ already sitting in one folder.
 
 Expected when Ray is ingested with `--about`: Izzy loses exactly 6
 moments, all pure. Both zips are extracted; nothing ingested yet.
+
+## 2026-09-13 — Confirmed: albums, all of them
+
+Matt: every folder was a Google Photos album, exported and downloaded — the
+two Izzy ones, Oakley, Ray. The friends' own phones hold more than reached
+the albums. D22 moves from proposed to locked.
+
+The confirmation adds something the device survey only hinted at. Ray's
+album holds the owner's Samsung, Motorola and Nexus photos next to Matt's
+Pixels, which means the album already accepted photos from more than one
+person. Google Photos did the *gathering* as well as the recognition. The
+vision imagined auto-pulling from everyone's camera roll; the cruder version
+of that — a shared album people add to — already exists and people already
+use it. So the ingest is "export your pet's album" via Takeout, and the
+sidecars come with it.
+
+What is left for us is the part the album cannot do: merge two people's
+separate albums of the same pet (Matt's and Renee's were separate exports),
+chapter it, resurface it, make it postable. That is the part that landed
+over breakfast. Cleaner story than the vision's, and now a decision.
+
+#32 stays at p1 but now measures dependence on the album rather than
+choosing an input. #18 promoted to the ingest path.

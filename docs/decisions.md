@@ -525,7 +525,11 @@ not for more inference.
 
 ## D22 — The input is the platform's pet album, not the raw camera roll
 
-**Status:** proposed · **Date:** 2026-09-13 · **Refines:** D7, D17, D21 · **See:** issue #32
+**Status:** locked · **Date:** 2026-09-13 · **Refines:** D7, D17, D21 · **See:** issues #32, #18
+
+**Confirmed by Matt:** every folder so far — Izzy (both), Oakley, Ray — was
+a Google Photos album, exported and downloaded. The friends' own phones
+hold more photos of their dogs than reached the albums.
 
 **Decision (proposed):** What a person hands the product is the pet album
 their phone already made — Google Photos' or Apple's own pet grouping — not
@@ -551,6 +555,18 @@ recognition) and sharpens it in another (we depend on that grouping
 existing and being exportable). The cross-person merge, the narrative, the
 feed and the artifacts are unaffected: none of them needed a raw roll.
 
-**What would change it:** #32 showing a raw roll is clean enough that the
-distinction does not matter — or showing the platform's album cannot be
-exported with enough fidelity to be the input.
+**What the confirmation adds:** the platform did the *gathering* too, not
+only the recognition. Ray's album holds photos from the owner's Samsung,
+Motorola and Nexus alongside Matt's Pixels — Google Photos albums already
+accept contributions from several people, and that is how a friend's old
+phone ended up in Matt's export. So the multi-contributor mechanism the
+vision imagined (auto-pull from everyone's camera roll) already exists in a
+cruder form that people use today: a shared album. The product's ingest is
+**"export your pet's album"**, via Takeout (#18) so the sidecars come with
+it. What the album cannot do — merge two people's *separate* albums of the
+same pet, chapter it, resurface it, make it postable — is exactly what is
+left for us, and it is the part that landed.
+
+**What would change it:** #32 showing the album is a poor input after all —
+too curated, too lossy, or unexportable at fidelity. Until then, "connect
+the camera roll" in the vision (§2) should be read as "connect the album".
